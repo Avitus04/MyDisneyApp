@@ -1,0 +1,30 @@
+{
+  "project_info": {
+    "project_number": "241534941500",
+    "firebase_url": "https://disney-6961f-default-rtdb.europe-west1.firebasedatabase.app",
+    "project_id": "disney-6961f",
+    "storage_bucket": "disney-6961f.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:241534941500:android:5c2621016cad4945db0639",
+        "android_client_info": {
+          "package_name": "fr.isen.segfault.thedisneyapp"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAJlEzZdsMTx1eZ6zRV5mNnuGgw6mQNui4"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
