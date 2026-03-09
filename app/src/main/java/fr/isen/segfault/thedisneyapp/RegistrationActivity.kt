@@ -1,5 +1,7 @@
 package fr.isen.segfault.thedisneyapp
 
+import android.app.Activity
+import android.content.Intent
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -10,6 +12,7 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.core.view.WindowCompat
 import androidx.navigation.compose.NavHost
@@ -34,9 +37,13 @@ class RegistrationActivity : ComponentActivity() {
                     startDestination = "login"
                 ) {
                     composable("login") {
+                        val context = LocalContext.current
                         LoginScreen(
                             onNavigateToSignup = { navController.navigate("signup") },
-                            onLoginSuccess = { /* naviguer vers l'app plus tard */ }
+                            onLoginSuccess = {
+                                context.startActivity(Intent(context, MainActivity::class.java))
+                                (context as Activity).finish() // ferme RegistrationActivity
+                            }
                         )
                     }
                     composable("signup") {
