@@ -31,13 +31,12 @@ import androidx.compose.ui.unit.sp
 import fr.isen.segfault.thedisneyapp.R
 import fr.isen.segfault.thedisneyapp.dataClasses.Universe
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material3.Icon
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
@@ -141,83 +140,68 @@ fun UniverseCard(
     Card(
         modifier = Modifier
             .fillMaxWidth()
-            .height(80.dp)
-            .border(
-                width = 1.dp,
-                color = colorResource(R.color.card_border),
-                shape = RoundedCornerShape(16.dp)
-            )
+            .height(88.dp)
             .clickable { onClick() },
-        shape = RoundedCornerShape(16.dp),
+        shape = RoundedCornerShape(20.dp),
         colors = CardDefaults.cardColors(
             containerColor = colorResource(R.color.card)
         ),
-        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
     ) {
         Row(
-            modifier = Modifier.fillMaxSize(),
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(horizontal = 14.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            // logo zone
             Box(
                 modifier = Modifier
-                    .fillMaxHeight()
-                    .width(88.dp)
-                    .background(
-                        Brush.linearGradient(
-                            colors = listOf(
-                                colorResource(R.color.accent2).copy(alpha = 0.12f),
-                                colorResource(R.color.accent).copy(alpha = 0.06f)
-                            )
-                        )
+                    .size(58.dp)
+                    .clip(RoundedCornerShape(16.dp))
+                    .background(colorResource(R.color.text).copy(alpha = 0.05f))
+                    .border(
+                        width = 1.dp,
+                        color = colorResource(R.color.text).copy(alpha = 0.08f),
+                        shape = RoundedCornerShape(16.dp)
                     ),
                 contentAlignment = Alignment.Center
             ) {
                 Image(
                     painter = painterResource(id = logoRes),
                     contentDescription = "${universe.name} logo",
-                    modifier = Modifier.fillMaxSize(),
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(5.dp),
                     contentScale = ContentScale.Fit
                 )
             }
 
+            Text(
+                text = universe.name,
+                modifier = Modifier.weight(1f).padding(horizontal = 12.dp),
+                color = colorResource(R.color.text),
+                fontSize = 18.sp,
+                fontWeight = FontWeight.SemiBold,
+                maxLines = 2
+            )
+
             Row(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(horizontal = 16.dp),
-                verticalAlignment = Alignment.CenterVertically
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(4.dp)
             ) {
                 Text(
-                    text = universe.name,
-                    modifier = Modifier.weight(1f),
-                    color = colorResource(R.color.text),
-                    fontSize = 16.sp,
-                    fontWeight = FontWeight.SemiBold,
-                    maxLines = 2
+                    text = "${universe.filmCount} films",
+                    color = colorResource(R.color.text).copy(alpha = 0.72f),
+                    fontSize = 15.sp,
+                    fontWeight = FontWeight.Medium
                 )
 
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(4.dp)
-                ) {
-                    Text(
-                        text = "${universe.filmCount}",
-                        color = colorResource(R.color.accent),
-                        fontSize = 14.sp,
-                        fontWeight = FontWeight.Bold
-                    )
-                    Text(
-                        text = "films",
-                        color = colorResource(R.color.text_sub),
-                        fontSize = 12.sp
-                    )
-                    Icon(
-                        imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight,
-                        contentDescription = "Open universe",
-                        tint = colorResource(R.color.accent).copy(alpha = 0.6f),
-                        modifier = Modifier.size(18.dp)
-                    )
-                }
+                Icon(
+                    imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight,
+                    contentDescription = "Open universe",
+                    tint = colorResource(R.color.text).copy(alpha = 0.72f),
+                    modifier = Modifier.size(20.dp)
+                )
             }
         }
     }
