@@ -27,6 +27,10 @@ import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.database.FirebaseDatabase
 import fr.isen.segfault.thedisneyapp.R
 import fr.isen.segfault.thedisneyapp.components.PasswordField
+import fr.isen.segfault.thedisneyapp.dataClasses.OwnedFilmUi
+import fr.isen.segfault.thedisneyapp.dataClasses.fetchOwnedFilms
+import fr.isen.segfault.thedisneyapp.dataClasses.removeOwnedFilm
+import fr.isen.segfault.thedisneyapp.dataClasses.updateWantToGetRid
 
 @Composable
 fun ProfileScreen(
@@ -35,6 +39,8 @@ fun ProfileScreen(
 ) {
     val auth = FirebaseAuth.getInstance()
     val user = auth.currentUser
+
+    var ownedFilms by remember { mutableStateOf<List<OwnedFilmUi>>(emptyList()) }
 
     // fetch username from DB with LaunchedEffect
     var username by remember { mutableStateOf(user?.displayName ?: "") }
@@ -48,6 +54,9 @@ fun ProfileScreen(
                         ?: user.displayName
                                 ?: "No Username"
                 }
+            fetchOwnedFilms {
+                ownedFilms = it
+            }
         }
     }
 
@@ -56,6 +65,7 @@ fun ProfileScreen(
     var errorMessage by remember { mutableStateOf<String?>(null) }
     var successMessage by remember { mutableStateOf<String?>(null) }
     var showPasswordFields by remember { mutableStateOf(false) }
+
 
     Box(
         modifier = Modifier
@@ -305,6 +315,59 @@ fun ProfileScreen(
                 }
             }
 
+            Column(
+                modifier = Modifier
+                    .padding(top = 20.dp)
+                    .fillMaxWidth()
+                    .clip(RoundedCornerShape(16.dp))
+                    .background(colorResource(R.color.card))
+                    .border(1.dp, colorResource(R.color.card_border), RoundedCornerShape(16.dp))
+                    .padding(20.dp)
+            ) {
+                Text(
+                    text = "Owned films",
+                    fontSize = 15.sp,
+                    fontWeight = FontWeight.SemiBold,
+                    color = colorResource(R.color.text),
+                    modifier = Modifier.padding(bottom = 16.dp)
+                )
+
+                if (ownedFilms.isEmpty()) {
+                    Text(
+                        text = "No owned films",
+                        fontSize = 13.sp,
+                        color = colorResource(R.color.text_sub)
+                    )
+                } else {
+                    Column(
+                        verticalArrangement = Arrangement.spacedBy(12.dp)
+                    ) {
+                        ownedFilms.forEach { film ->
+                            OwnedFilmCard(
+                                film = film,
+                                onRemove = {
+                                    removeOwnedFilm(
+                                        filmId = film.filmId,
+                                        onSuccess = {
+                                            fetchOwnedFilms { ownedFilms = it }
+                                        }
+                                    )
+                                },
+                                onToggleGetRid = {
+                                    updateWantToGetRid(
+                                        filmId = film.filmId,
+                                        value = !film.wantToGetRid,
+                                        onSuccess = {
+                                            fetchOwnedFilms { ownedFilms = it }
+                                        }
+                                    )
+                                }
+                            )
+                        }
+                    }
+                }
+            }
+
             // logout button
             Button(
                 onClick = {
@@ -325,6 +388,75 @@ fun ProfileScreen(
                     "Log out",
                     fontWeight = FontWeight.Bold,
                     fontSize = 15.sp,
+                    color = colorResource(R.color.red)
+                )
+            }
+        }
+    }
+}
+
+@Composable
+fun OwnedFilmCard(
+    film: OwnedFilmUi,
+    onRemove: () -> Unit,
+    onToggleGetRid: () -> Unit
+) {
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(14.dp))
+            .background(colorResource(R.color.surface))
+            .border(
+                1.dp,
+                colorResource(R.color.card_border),
+                RoundedCornerShape(14.dp)
+            )
+            .padding(14.dp)
+    ) {
+        Text(
+            text = buildString {
+                append(film.title)
+                film.releaseYear?.let { append(" (${it})") }
+            },
+            fontSize = 15.sp,
+            fontWeight = FontWeight.SemiBold,
+            color = colorResource(R.color.text),
+            modifier = Modifier.padding(8.dp)
+        )
+
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
+            Button(
+                onClick = onToggleGetRid,
+                modifier = Modifier.weight(1f),
+                shape = RoundedCornerShape(10.dp),
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = if (film.wantToGetRid)
+                        colorResource(R.color.gold).copy(alpha = 0.25f)
+                    else
+                        colorResource(R.color.accent_dim)
+                )
+            ) {
+                Text(
+                    text = if (film.wantToGetRid) "Marked to get rid" else "Mark to get rid",
+                    fontSize = 10.sp,
+                    color = colorResource(R.color.text)
+                )
+            }
+
+            Button(
+                onClick = onRemove,
+                modifier = Modifier.weight(1f),
+                shape = RoundedCornerShape(10.dp),
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = colorResource(R.color.red).copy(alpha = 0.18f)
+                )
+            ) {
+                Text(
+                    text = "Remove from owned",
+                    fontSize = 10.sp,
                     color = colorResource(R.color.red)
                 )
             }
