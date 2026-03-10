@@ -25,7 +25,7 @@ fun fetchUsersWhoOwnAndWantToGetRid(
 
             for (userSnapshot in snapshot.children) {
                 val uid = userSnapshot.child("uid").getValue(String::class.java).orEmpty()
-                val displayName = userSnapshot.child("username").getValue(String::class.java).orEmpty()
+                val displayName = userSnapshot.child("username  ").getValue(String::class.java).orEmpty()
                 val email = userSnapshot.child("email").getValue(String::class.java).orEmpty()
 
                 val filmStatus = userSnapshot.child("filmStatus").child(filmId)

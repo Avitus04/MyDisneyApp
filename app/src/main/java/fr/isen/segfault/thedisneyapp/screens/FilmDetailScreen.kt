@@ -247,26 +247,35 @@ fun FilmDetailScreen(
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         StatusButtonWithText(
-                            text = "Own DVD/Blue Ray",
+                            text = "Own DVD",
                             color = colorResource(R.color.status_red),
                             isActive = ownDvdBluray,
                             onClick = {
                                 ownDvdBluray = !ownDvdBluray
+
+                                if (!ownDvdBluray) {
+                                    wantToGetRid = false
+                                }
+
                                 persistStatus()
                             },
                             modifier = Modifier.weight(1f)
                         )
 
-                        StatusButtonWithText(
-                            text = "Get rid",
-                            color = colorResource(R.color.status_yellow),
-                            isActive = wantToGetRid,
-                            onClick = {
-                                wantToGetRid = !wantToGetRid
-                                persistStatus()
-                            },
-                            modifier = Modifier.weight(1f)
-                        )
+                        if (ownDvdBluray) {
+                            StatusButtonWithText(
+                                text = "Get rid",
+                                color = colorResource(R.color.status_yellow),
+                                isActive = wantToGetRid,
+                                onClick = {
+                                    wantToGetRid = !wantToGetRid
+                                    persistStatus()
+                                },
+                                modifier = Modifier.weight(1f)
+                            )
+                        } else {
+                            Spacer(modifier = Modifier.weight(1f))
+                        }
                     }
                 }
 
