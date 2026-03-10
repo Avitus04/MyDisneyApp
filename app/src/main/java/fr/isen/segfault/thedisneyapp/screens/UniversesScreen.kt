@@ -7,7 +7,6 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -39,6 +38,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material3.Icon
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
 import fr.isen.segfault.thedisneyapp.dataClasses.Film
@@ -73,33 +73,60 @@ fun UniversesScreen(
         )
     }.sortedBy { it.name }
 
-    Column(
+    Box(
         modifier = modifier
             .fillMaxSize()
             .background(colorResource(R.color.background))
-            .padding(horizontal = 20.dp, vertical = 16.dp)
     ) {
-        Text(
-            text = "Universes",
-            color = colorResource(R.color.text),
-            fontSize = 30.sp,
-            fontWeight = FontWeight.ExtraBold
+        // top radial glow
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(300.dp)
+                .background(
+                    Brush.radialGradient(
+                        colors = listOf(
+                            colorResource(R.color.accent2).copy(alpha = 0.18f),
+                            colorResource(R.color.background).copy(alpha = 0f)
+                        ),
+                        radius = 700f
+                    )
+                )
         )
 
-        Spacer(modifier = Modifier.height(20.dp))
-
-        LazyColumn(
-            modifier = Modifier.fillMaxSize(),
-            verticalArrangement = Arrangement.spacedBy(14.dp)
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(horizontal = 24.dp)
         ) {
-            items(universesUi) { universe ->
-                UniverseCard(
-                    universe = universe,
-                    logoRes =   getUniverseLogoRes(universe.id),
-                    onClick = {
-                        onUniverseClick(universe.id)
-                    }
-                )
+            Text(
+                text = "UNIVERSES",
+                color = colorResource(R.color.accent),
+                fontSize = 13.sp,
+                fontWeight = FontWeight.Bold,
+                letterSpacing = 4.sp,
+                modifier = Modifier.padding(top = 56.dp)
+            )
+
+            Text(
+                text = "Explore",
+                color = colorResource(R.color.text),
+                fontSize = 28.sp,
+                fontWeight = FontWeight.ExtraBold,
+                modifier = Modifier.padding(top = 4.dp, bottom = 24.dp)
+            )
+
+            LazyColumn(
+                modifier = Modifier.fillMaxSize(),
+                verticalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
+                items(universesUi) { universe ->
+                    UniverseCard(
+                        universe = universe,
+                        logoRes = getUniverseLogoRes(universe.id),
+                        onClick = { onUniverseClick(universe.id) }
+                    )
+                }
             }
         }
     }
@@ -117,34 +144,39 @@ fun UniverseCard(
             .height(80.dp)
             .border(
                 width = 1.dp,
-                color = colorResource(R.color.text),
-                shape = RoundedCornerShape(24.dp))
+                color = colorResource(R.color.card_border),
+                shape = RoundedCornerShape(16.dp)
+            )
             .clickable { onClick() },
-        shape = RoundedCornerShape(20.dp),
+        shape = RoundedCornerShape(16.dp),
         colors = CardDefaults.cardColors(
             containerColor = colorResource(R.color.card)
         ),
-        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
     ) {
         Row(
             modifier = Modifier.fillMaxSize(),
             verticalAlignment = Alignment.CenterVertically
         ) {
+            // logo zone
             Box(
                 modifier = Modifier
                     .fillMaxHeight()
-                    .width(92.dp)
+                    .width(88.dp)
                     .background(
-                        color = colorResource(R.color.text).copy(alpha = 0.05f)
+                        Brush.linearGradient(
+                            colors = listOf(
+                                colorResource(R.color.accent2).copy(alpha = 0.12f),
+                                colorResource(R.color.accent).copy(alpha = 0.06f)
+                            )
+                        )
                     ),
                 contentAlignment = Alignment.Center
             ) {
                 Image(
                     painter = painterResource(id = logoRes),
                     contentDescription = "${universe.name} logo",
-                    modifier = Modifier
-                        .fillMaxSize(),
-
+                    modifier = Modifier.fillMaxSize(),
                     contentScale = ContentScale.Fit
                 )
             }
@@ -159,7 +191,7 @@ fun UniverseCard(
                     text = universe.name,
                     modifier = Modifier.weight(1f),
                     color = colorResource(R.color.text),
-                    fontSize = 18.sp,
+                    fontSize = 16.sp,
                     fontWeight = FontWeight.SemiBold,
                     maxLines = 2
                 )
@@ -169,17 +201,21 @@ fun UniverseCard(
                     horizontalArrangement = Arrangement.spacedBy(4.dp)
                 ) {
                     Text(
-                        text = "${universe.filmCount} films",
-                        color = colorResource(R.color.text).copy(alpha = 0.72f),
-                        fontSize = 16.sp,
-                        fontWeight = FontWeight.Medium
+                        text = "${universe.filmCount}",
+                        color = colorResource(R.color.accent),
+                        fontSize = 14.sp,
+                        fontWeight = FontWeight.Bold
                     )
-
+                    Text(
+                        text = "films",
+                        color = colorResource(R.color.text_sub),
+                        fontSize = 12.sp
+                    )
                     Icon(
                         imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight,
                         contentDescription = "Open universe",
-                        tint = colorResource(R.color.text).copy(alpha = 0.72f),
-                        modifier = Modifier.size(20.dp)
+                        tint = colorResource(R.color.accent).copy(alpha = 0.6f),
+                        modifier = Modifier.size(18.dp)
                     )
                 }
             }

@@ -5,7 +5,6 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -33,6 +32,8 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.colorResource
 import androidx.compose.ui.res.painterResource
@@ -68,33 +69,59 @@ fun FranchisesScreen(
         )
     }.sortedBy { it.name }
 
-    Column(
+    Box(
         modifier = Modifier
             .fillMaxSize()
             .background(colorResource(R.color.background))
-            .padding(horizontal = 20.dp, vertical = 16.dp)
     ) {
-        Text(
-            text = "Franchises",
-            color = colorResource(R.color.text),
-            fontSize = 30.sp,
-            fontWeight = FontWeight.ExtraBold
+        // top radial glow
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(300.dp)
+                .background(
+                    Brush.radialGradient(
+                        colors = listOf(
+                            colorResource(R.color.accent2).copy(alpha = 0.18f),
+                            colorResource(R.color.background).copy(alpha = 0f)
+                        ),
+                        radius = 700f
+                    )
+                )
         )
 
-        Spacer(modifier = Modifier.height(20.dp))
-
-        LazyColumn(
-            modifier = Modifier.fillMaxSize(),
-            verticalArrangement = Arrangement.spacedBy(14.dp)
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(horizontal = 24.dp)
         ) {
-            items(franchisesUi) { franchise ->
-                FranchiseCard(
-                    franchise = franchise,
-                    //logoRes = getFranchiseLogoRes(franchise.id),
-                    onClick = {
-                        onFranchiseClick(franchise.id)
-                    }
-                )
+            Text(
+                text = "FRANCHISES",
+                color = colorResource(R.color.accent),
+                fontSize = 13.sp,
+                fontWeight = FontWeight.Bold,
+                letterSpacing = 4.sp,
+                modifier = Modifier.padding(top = 56.dp)
+            )
+
+            Text(
+                text = "Collections",
+                color = colorResource(R.color.text),
+                fontSize = 28.sp,
+                fontWeight = FontWeight.ExtraBold,
+                modifier = Modifier.padding(top = 4.dp, bottom = 24.dp)
+            )
+
+            LazyColumn(
+                modifier = Modifier.fillMaxSize(),
+                verticalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
+                items(franchisesUi) { franchise ->
+                    FranchiseCard(
+                        franchise = franchise,
+                        onClick = { onFranchiseClick(franchise.id) }
+                    )
+                }
             }
         }
     }
@@ -103,7 +130,6 @@ fun FranchisesScreen(
 @Composable
 fun FranchiseCard(
     franchise: Franchise,
-    //logoRes: Int,
     onClick: () -> Unit
 ) {
     Card(
@@ -112,72 +138,70 @@ fun FranchiseCard(
             .height(80.dp)
             .border(
                 width = 1.dp,
-                color = colorResource(R.color.text),
-                shape = RoundedCornerShape(24.dp)
+                color = colorResource(R.color.card_border),
+                shape = RoundedCornerShape(16.dp)
             )
             .clickable { onClick() },
-        shape = RoundedCornerShape(20.dp),
+        shape = RoundedCornerShape(16.dp),
         colors = CardDefaults.cardColors(
             containerColor = colorResource(R.color.card)
         ),
-        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
     ) {
         Row(
-            modifier = Modifier.fillMaxSize(),
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(horizontal = 20.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            /*Box(
+            // colored left accent bar
+            Box(
                 modifier = Modifier
-                    .fillMaxHeight()
-                    .width(92.dp)
+                    .width(3.dp)
+                    .height(36.dp)
+                    .clip(RoundedCornerShape(2.dp))
                     .background(
-                        color = colorResource(R.color.text).copy(alpha = 0.05f)
-                    ),
-                contentAlignment = Alignment.Center
-            ) {
-                Image(
-                    painter = painterResource(id = logoRes),
-                    contentDescription = "${franchise.name} logo",
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .padding(horizontal = 10.dp, vertical = 12.dp),
-                    contentScale = ContentScale.Fit
-                )
-            }*/
+                        Brush.verticalGradient(
+                            colors = listOf(
+                                colorResource(R.color.accent),
+                                colorResource(R.color.accent2)
+                            )
+                        )
+                    )
+            )
+
+            Text(
+                text = franchise.name,
+                modifier = Modifier
+                    .weight(1f)
+                    .padding(start = 14.dp),
+                color = colorResource(R.color.text),
+                fontSize = 16.sp,
+                fontWeight = FontWeight.SemiBold,
+                maxLines = 2
+            )
 
             Row(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(horizontal = 16.dp),
-                verticalAlignment = Alignment.CenterVertically
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(4.dp)
             ) {
                 Text(
-                    text = franchise.name,
-                    modifier = Modifier.weight(1f),
-                    color = colorResource(R.color.text),
-                    fontSize = 18.sp,
-                    fontWeight = FontWeight.SemiBold,
-                    maxLines = 2
+                    text = "${franchise.filmCount}",
+                    color = colorResource(R.color.accent),
+                    fontSize = 14.sp,
+                    fontWeight = FontWeight.Bold
                 )
-
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(4.dp)
-                ) {
-                    Text(
-                        text = "${franchise.filmCount} films",
-                        color = colorResource(R.color.text).copy(alpha = 0.72f),
-                        fontSize = 16.sp,
-                        fontWeight = FontWeight.Medium
-                    )
-
-                    Icon(
-                        imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight,
-                        contentDescription = "Open franchise",
-                        tint = colorResource(R.color.text).copy(alpha = 0.72f),
-                        modifier = Modifier.size(20.dp)
-                    )
-                }
+                Text(
+                    text = "films",
+                    color = colorResource(R.color.text_sub),
+                    fontSize = 12.sp
+                )
+                Icon(
+                    imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight,
+                    contentDescription = "Open franchise",
+                    tint = colorResource(R.color.accent).copy(alpha = 0.6f),
+                    modifier = Modifier.size(18.dp)
+                )
             }
         }
     }

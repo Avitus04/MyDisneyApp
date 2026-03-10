@@ -10,8 +10,10 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Home
+import androidx.compose.material.icons.filled.Menu
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.outlined.Home
+import androidx.compose.material.icons.outlined.Menu
 import androidx.compose.material.icons.outlined.Person
 import androidx.compose.material3.Scaffold
 import androidx.compose.ui.Modifier
@@ -50,6 +52,10 @@ class MainActivity : ComponentActivity() {
                         unselectedIcon = Icons.Outlined.Home
                     ),
                     TabBarItem(
+                        "Films",
+                        Icons.Filled.Menu,
+                        Icons.Outlined.Menu),
+                    TabBarItem(
                         title = "Profile",
                         selectedIcon = Icons.Filled.Person,
                         unselectedIcon = Icons.Outlined.Person
@@ -78,42 +84,40 @@ class MainActivity : ComponentActivity() {
                                 }
                             )
                         }
+                        // Dans MainActivity, remplacer la route franchises
                         composable(
                             route = "franchises/{universeId}",
-                            arguments = listOf(
-                                navArgument("universeId") {
-                                    type = NavType.StringType
-                                }
-                            )
-                        ) { backStackEntry ->
-                            val universeId =
-                                backStackEntry.arguments?.getString("universeId").orEmpty()
-
+                            arguments = listOf(navArgument("universeId") { type = NavType.StringType })
+                        ) {
+                            val universeId = it.arguments?.getString("universeId").orEmpty()
                             FranchisesScreen(
                                 universeId = universeId,
                                 fetchFranchises = ::fetchFranchises,
                                 onFranchiseClick = { franchiseId ->
-                                    navController.navigate("films/$universeId/$franchiseId")
+                                    navController.navigate("Films?universeId=$universeId&franchiseId=$franchiseId")
                                 }
                             )
                         }
-                        composable(
-                            route = "films/{universeId}/{franchiseId}",
-                            arguments = listOf(
-                                navArgument("universeId") { type = NavType.StringType },
-                                navArgument("franchiseId") { type = NavType.StringType }
-                            )
-                        ) { backStackEntry ->
-                            val universeId = backStackEntry.arguments?.getString("universeId").orEmpty()
-                            val franchiseId = backStackEntry.arguments?.getString("franchiseId").orEmpty()
 
+                        composable("Films") {
                             FilmsScreen(
-                                universeId = universeId,
-                                franchiseId = franchiseId,
                                 fetchFilmsByFranchise = ::fetchFilmsByFranchise,
-                                onFilmClick = { filmId ->
-                                    navController.navigate("filmDetail/$filmId")
-                                }
+                                onFilmClick = { filmId -> navController.navigate("filmDetail/$filmId") }
+                            )
+                        }
+
+                        composable(
+                            route = "Films?universeId={universeId}&franchiseId={franchiseId}",
+                            arguments = listOf(
+                                navArgument("universeId") { type = NavType.StringType; nullable = true; defaultValue = null },
+                                navArgument("franchiseId") { type = NavType.StringType; nullable = true; defaultValue = null }
+                            )
+                        ) {
+                            FilmsScreen(
+                                fetchFilmsByFranchise = ::fetchFilmsByFranchise,
+                                onFilmClick = { filmId -> navController.navigate("filmDetail/$filmId") },
+                                universeIdFilter = it.arguments?.getString("universeId"),
+                                franchiseIdFilter = it.arguments?.getString("franchiseId")
                             )
                         }
                         composable(
@@ -131,7 +135,6 @@ class MainActivity : ComponentActivity() {
                                 fetchFilmById = ::fetchFilmById
                             )
                         }
-
 
                         composable("Profile") {
                             val context = LocalContext.current

@@ -1,13 +1,14 @@
 package fr.isen.segfault.thedisneyapp.screens
 
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -20,10 +21,20 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
+import androidx.compose.material.icons.automirrored.filled.List
+import androidx.compose.material.icons.filled.Check
+import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Face
+import androidx.compose.material.icons.filled.KeyboardArrowDown
+import androidx.compose.material.icons.filled.KeyboardArrowUp
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -33,54 +44,393 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.colorResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import coil3.compose.AsyncImage
 import fr.isen.segfault.thedisneyapp.R
 import fr.isen.segfault.thedisneyapp.dataClasses.Film
+import fr.isen.segfault.thedisneyapp.dataClasses.Franchise
+import fr.isen.segfault.thedisneyapp.dataClasses.TmdbMovieSearchResponse
+import fr.isen.segfault.thedisneyapp.dataClasses.Universe
+import fr.isen.segfault.thedisneyapp.dataClasses.fetchFilms
+import fr.isen.segfault.thedisneyapp.dataClasses.fetchFranchises
+import fr.isen.segfault.thedisneyapp.dataClasses.fetchUniverses
+import fr.isen.segfault.thedisneyapp.dataClasses.getPosterUrl
+import fr.isen.segfault.thedisneyapp.network.TmdbApiClient
+
+enum class SortOption(val label: String) {
+    NAME_ASC("Nom A→Z"),
+    NAME_DESC("Nom Z→A"),
+    DATE_ASC("Date croissante"),
+    DATE_DESC("Date décroissante")
+}
 
 @Composable
 fun FilmsScreen(
-    universeId: String,
-    franchiseId: String,
     fetchFilmsByFranchise: (String, String, (List<Film>) -> Unit) -> Unit,
-    onFilmClick: (String) -> Unit
-) {
-    var films by remember { mutableStateOf<List<Film>>(emptyList()) }
+    onFilmClick: (String) -> Unit,
+    universeIdFilter: String? = null,
+    franchiseIdFilter: String? = null
+)
+{
+    var allFilms by remember { mutableStateOf<List<Film>>(emptyList()) }
+    var allUniverses by remember { mutableStateOf<List<Universe>>(emptyList()) }
+    var allFranchises by remember { mutableStateOf<List<Franchise>>(emptyList()) }
 
-    LaunchedEffect(universeId, franchiseId) {
-        fetchFilmsByFranchise(universeId, franchiseId) {
-            films = it
-        }
+    // filter state — pre-filled if coming from Universes/Franchises nav
+    var selectedUniverseId by remember { mutableStateOf(universeIdFilter) }
+    var selectedFranchiseId by remember { mutableStateOf(franchiseIdFilter) }
+    var selectedSort by remember { mutableStateOf(SortOption.NAME_ASC) }
+
+    // dropdown visibility
+    var showFilterDropdown by remember { mutableStateOf(false) }
+    var showSortDropdown by remember { mutableStateOf(false) }
+
+    // sub-dropdown for universe/franchise selection inside filter
+    var showUniversePicker by remember { mutableStateOf(false) }
+    var showFranchisePicker by remember { mutableStateOf(false) }
+
+    LaunchedEffect(Unit) {
+        fetchFilms { allFilms = it }
+        fetchUniverses { allUniverses = it }
     }
 
-    Column(
+    // fetch franchises when universe changes
+    LaunchedEffect(selectedUniverseId) {
+        selectedUniverseId?.let { uid ->
+            fetchFranchises(uid) { allFranchises = it }
+        } ?: run { allFranchises = emptyList() }
+    }
+
+    // apply filters + sort
+    val filteredFilms = allFilms
+        .filter { film ->
+            (selectedUniverseId == null || film.universeId == selectedUniverseId) &&
+                    (selectedFranchiseId == null || film.franchiseId == selectedFranchiseId)
+        }
+        .let { list ->
+            when (selectedSort) {
+                SortOption.NAME_ASC  -> list.sortedBy { it.title }
+                SortOption.NAME_DESC -> list.sortedByDescending { it.title }
+                SortOption.DATE_ASC  -> list.sortedBy { it.releaseYear ?: Int.MAX_VALUE }
+                SortOption.DATE_DESC -> list.sortedByDescending { it.releaseYear ?: 0 }
+            }
+        }
+
+    val selectedUniverseName = allUniverses.find { it.id == selectedUniverseId }?.name
+    val selectedFranchiseName = allFranchises.find { it.id == selectedFranchiseId }?.name
+
+    Box(
         modifier = Modifier
             .fillMaxSize()
             .background(colorResource(R.color.background))
-            .padding(horizontal = 20.dp, vertical = 16.dp)
     ) {
-        Text(
-            text = "Films",
-            color = colorResource(R.color.text),
-            fontSize = 30.sp,
-            fontWeight = FontWeight.ExtraBold
+        // top radial glow
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(300.dp)
+                .background(
+                    Brush.radialGradient(
+                        colors = listOf(
+                            colorResource(R.color.accent2).copy(alpha = 0.18f),
+                            colorResource(R.color.background).copy(alpha = 0f)
+                        ),
+                        radius = 700f
+                    )
+                )
         )
 
-        Spacer(modifier = Modifier.height(20.dp))
-
-        LazyColumn(
-            modifier = Modifier.fillMaxSize(),
-            verticalArrangement = Arrangement.spacedBy(14.dp)
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(horizontal = 24.dp)
         ) {
-            items(films) { film ->
-                FilmCard(
-                    film = film,
-                    onClick = {
-                        onFilmClick(film.id)
+            Text(
+                text = "FILMS",
+                color = colorResource(R.color.accent),
+                fontSize = 13.sp,
+                fontWeight = FontWeight.Bold,
+                letterSpacing = 4.sp,
+                modifier = Modifier.padding(top = 56.dp)
+            )
+
+            Text(
+                text = "${filteredFilms.size} titles",
+                color = colorResource(R.color.text),
+                fontSize = 28.sp,
+                fontWeight = FontWeight.ExtraBold,
+                modifier = Modifier.padding(top = 4.dp)
+            )
+
+            // filter + sort buttons row
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(top = 16.dp, bottom = 16.dp),
+                horizontalArrangement = Arrangement.spacedBy(10.dp)
+            ) {
+                // filter button + dropdown
+                Box {
+                    val filterActive = selectedUniverseId != null || selectedFranchiseId != null
+                    OutlinedButton(
+                        onClick = { showFilterDropdown = true },
+                        shape = RoundedCornerShape(10.dp),
+                        border = BorderStroke(
+                            1.dp,
+                            if (filterActive) colorResource(R.color.accent)
+                            else colorResource(R.color.card_border)
+                        ),
+                        colors = ButtonDefaults.outlinedButtonColors(
+                            containerColor = if (filterActive)
+                                colorResource(R.color.accent_dim)
+                            else colorResource(R.color.card)
+                        ),
+                        contentPadding = PaddingValues(horizontal = 14.dp, vertical = 8.dp)
+                    ) {
+                        Icon(
+                            imageVector = Icons.AutoMirrored.Filled.List,
+                            contentDescription = "Filter",
+                            tint = if (filterActive) colorResource(R.color.accent)
+                            else colorResource(R.color.text_sub),
+                            modifier = Modifier.size(16.dp)
+                        )
+                        Text(
+                            text = when {
+                                selectedFranchiseName != null -> selectedFranchiseName
+                                selectedUniverseName != null  -> selectedUniverseName
+                                else -> "Filter"
+                            },
+                            color = if (filterActive) colorResource(R.color.accent)
+                            else colorResource(R.color.text_sub),
+                            fontSize = 13.sp,
+                            fontWeight = FontWeight.Medium,
+                            modifier = Modifier.padding(start = 6.dp),
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis
+                        )
                     }
-                )
+
+                    DropdownMenu(
+                        expanded = showFilterDropdown,
+                        onDismissRequest = {
+                            showFilterDropdown = false
+                            showUniversePicker = false
+                            showFranchisePicker = false
+                        },
+                        modifier = Modifier
+                            .background(colorResource(R.color.card))
+                            .border(1.dp, colorResource(R.color.card_border), RoundedCornerShape(12.dp))
+                    ) {
+                        // reset filter
+                        DropdownMenuItem(
+                            text = {
+                                Text(
+                                    "All films",
+                                    color = colorResource(R.color.text_sub),
+                                    fontSize = 13.sp
+                                )
+                            },
+                            onClick = {
+                                selectedUniverseId = null
+                                selectedFranchiseId = null
+                                showFilterDropdown = false
+                            },
+                            leadingIcon = {
+                                Icon(
+                                    Icons.Filled.Close,
+                                    contentDescription = null,
+                                    tint = colorResource(R.color.text_sub),
+                                    modifier = Modifier.size(16.dp)
+                                )
+                            }
+                        )
+
+                        HorizontalDivider(color = colorResource(R.color.card_border))
+
+                        // universe picker
+                        DropdownMenuItem(
+                            text = {
+                                Text(
+                                    selectedUniverseName ?: "Universe",
+                                    color = colorResource(R.color.text),
+                                    fontSize = 13.sp,
+                                    fontWeight = FontWeight.Medium
+                                )
+                            },
+                            onClick = {
+                                showUniversePicker = !showUniversePicker
+                                showFranchisePicker = false
+                            },
+                            trailingIcon = {
+                                Icon(
+                                    if (showUniversePicker) Icons.Filled.KeyboardArrowUp
+                                    else Icons.Filled.KeyboardArrowDown,
+                                    contentDescription = null,
+                                    tint = colorResource(R.color.accent),
+                                    modifier = Modifier.size(16.dp)
+                                )
+                            }
+                        )
+
+                        if (showUniversePicker) {
+                            allUniverses.forEach { universe ->
+                                DropdownMenuItem(
+                                    text = {
+                                        Text(
+                                            universe.name,
+                                            color = if (selectedUniverseId == universe.id)
+                                                colorResource(R.color.accent)
+                                            else colorResource(R.color.text_sub),
+                                            fontSize = 12.sp,
+                                            modifier = Modifier.padding(start = 12.dp)
+                                        )
+                                    },
+                                    onClick = {
+                                        selectedUniverseId = universe.id
+                                        selectedFranchiseId = null
+                                        showUniversePicker = false
+                                    }
+                                )
+                            }
+                        }
+
+                        // franchise picker — only if universe selected
+                        if (selectedUniverseId != null) {
+                            HorizontalDivider(color = colorResource(R.color.card_border))
+
+                            DropdownMenuItem(
+                                text = {
+                                    Text(
+                                        selectedFranchiseName ?: "Franchise",
+                                        color = colorResource(R.color.text),
+                                        fontSize = 13.sp,
+                                        fontWeight = FontWeight.Medium
+                                    )
+                                },
+                                onClick = {
+                                    showFranchisePicker = !showFranchisePicker
+                                    showUniversePicker = false
+                                },
+                                trailingIcon = {
+                                    Icon(
+                                        if (showFranchisePicker) Icons.Filled.KeyboardArrowUp
+                                        else Icons.Filled.KeyboardArrowDown,
+                                        contentDescription = null,
+                                        tint = colorResource(R.color.accent),
+                                        modifier = Modifier.size(16.dp)
+                                    )
+                                }
+                            )
+
+                            if (showFranchisePicker) {
+                                allFranchises.forEach { franchise ->
+                                    DropdownMenuItem(
+                                        text = {
+                                            Text(
+                                                franchise.name,
+                                                color = if (selectedFranchiseId == franchise.id)
+                                                    colorResource(R.color.accent)
+                                                else colorResource(R.color.text_sub),
+                                                fontSize = 12.sp,
+                                                modifier = Modifier.padding(start = 12.dp)
+                                            )
+                                        },
+                                        onClick = {
+                                            selectedFranchiseId = franchise.id
+                                            showFranchisePicker = false
+                                            showFilterDropdown = false
+                                        }
+                                    )
+                                }
+                            }
+                        }
+                    }
+                }
+
+                // sort button + dropdown
+                Box {
+                    OutlinedButton(
+                        onClick = { showSortDropdown = true },
+                        shape = RoundedCornerShape(10.dp),
+                        border = BorderStroke(1.dp, colorResource(R.color.card_border)),
+                        colors = ButtonDefaults.outlinedButtonColors(
+                            containerColor = colorResource(R.color.card)
+                        ),
+                        contentPadding = PaddingValues(horizontal = 14.dp, vertical = 8.dp)
+                    ) {
+                        Icon(
+                            imageVector = Icons.Filled.KeyboardArrowDown,
+                            contentDescription = "Sort",
+                            tint = colorResource(R.color.text_sub),
+                            modifier = Modifier.size(16.dp)
+                        )
+                        Text(
+                            text = selectedSort.label,
+                            color = colorResource(R.color.text_sub),
+                            fontSize = 13.sp,
+                            fontWeight = FontWeight.Medium,
+                            modifier = Modifier.padding(start = 6.dp)
+                        )
+                    }
+
+                    DropdownMenu(
+                        expanded = showSortDropdown,
+                        onDismissRequest = { showSortDropdown = false },
+                        modifier = Modifier
+                            .background(colorResource(R.color.card))
+                            .border(1.dp, colorResource(R.color.card_border), RoundedCornerShape(12.dp))
+                    ) {
+                        SortOption.entries.forEach { option ->
+                            DropdownMenuItem(
+                                text = {
+                                    Text(
+                                        option.label,
+                                        color = if (selectedSort == option)
+                                            colorResource(R.color.accent)
+                                        else colorResource(R.color.text),
+                                        fontSize = 13.sp,
+                                        fontWeight = if (selectedSort == option)
+                                            FontWeight.SemiBold
+                                        else FontWeight.Normal
+                                    )
+                                },
+                                onClick = {
+                                    selectedSort = option
+                                    showSortDropdown = false
+                                },
+                                trailingIcon = {
+                                    if (selectedSort == option) {
+                                        Icon(
+                                            Icons.Filled.Check,
+                                            contentDescription = null,
+                                            tint = colorResource(R.color.accent),
+                                            modifier = Modifier.size(14.dp)
+                                        )
+                                    }
+                                }
+                            )
+                        }
+                    }
+                }
+            }
+
+            LazyColumn(
+                modifier = Modifier.fillMaxSize(),
+                verticalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
+                items(filteredFilms) { film ->
+                    FilmCard(
+                        film = film,
+                        onClick = { onFilmClick(film.id) }
+                    )
+                }
             }
         }
     }
@@ -91,41 +441,83 @@ fun FilmCard(
     film: Film,
     onClick: () -> Unit
 ) {
+    // fetch poster for this film
+    var posterUrl by remember { mutableStateOf<String?>(null) }
+
+    LaunchedEffect(film.id) {
+        val call = TmdbApiClient.retrofit.searchMovie(
+            title = film.title,
+            year = film.releaseYear
+        )
+        call.enqueue(object : retrofit2.Callback<TmdbMovieSearchResponse> {
+            override fun onResponse(
+                call: retrofit2.Call<TmdbMovieSearchResponse>,
+                response: retrofit2.Response<TmdbMovieSearchResponse>
+            ) {
+                val movie = response.body()?.results?.firstOrNull()
+                posterUrl = getPosterUrl(movie?.poster_path)
+            }
+
+            override fun onFailure(
+                call: retrofit2.Call<TmdbMovieSearchResponse>,
+                t: Throwable
+            ) {
+                posterUrl = null
+            }
+        })
+    }
+
     Card(
         modifier = Modifier
             .fillMaxWidth()
-            .height(92.dp)
+            .height(88.dp)
             .border(
                 width = 1.dp,
-                color = colorResource(R.color.text),
-                shape = RoundedCornerShape(24.dp)
+                color = colorResource(R.color.card_border),
+                shape = RoundedCornerShape(16.dp)
             )
             .clickable { onClick() },
-        shape = RoundedCornerShape(20.dp),
+        shape = RoundedCornerShape(16.dp),
         colors = CardDefaults.cardColors(
             containerColor = colorResource(R.color.card)
         ),
-        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
     ) {
         Row(
             modifier = Modifier.fillMaxSize(),
             verticalAlignment = Alignment.CenterVertically
         ) {
+            // poster zone
             Box(
                 modifier = Modifier
                     .fillMaxHeight()
-                    .width(92.dp)
+                    .width(64.dp)
+                    .clip(RoundedCornerShape(topStart = 16.dp, bottomStart = 16.dp))
                     .background(
-                        color = colorResource(R.color.text).copy(alpha = 0.05f)
+                        Brush.linearGradient(
+                            colors = listOf(
+                                colorResource(R.color.accent2).copy(alpha = 0.12f),
+                                colorResource(R.color.accent).copy(alpha = 0.06f)
+                            )
+                        )
                     ),
                 contentAlignment = Alignment.Center
             ) {
-                Icon(
-                    imageVector = Icons.Filled.Face,
-                    contentDescription = "Film",
-                    tint = colorResource(R.color.text).copy(alpha = 0.8f),
-                    modifier = Modifier.size(34.dp)
-                )
+                if (posterUrl != null) {
+                    AsyncImage(
+                        model = posterUrl,
+                        contentDescription = "${film.title} poster",
+                        modifier = Modifier.fillMaxSize(),
+                        contentScale = ContentScale.Crop
+                    )
+                } else {
+                    Icon(
+                        imageVector = Icons.Filled.Face,
+                        contentDescription = "Film",
+                        tint = colorResource(R.color.accent).copy(alpha = 0.4f),
+                        modifier = Modifier.size(28.dp)
+                    )
+                }
             }
 
             Row(
@@ -134,25 +526,23 @@ fun FilmCard(
                     .padding(horizontal = 16.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                Column(
-                    modifier = Modifier.weight(1f)
-                ) {
+                Column(modifier = Modifier.weight(1f)) {
                     Text(
                         text = film.title,
                         color = colorResource(R.color.text),
-                        fontSize = 18.sp,
+                        fontSize = 15.sp,
                         fontWeight = FontWeight.SemiBold,
                         maxLines = 2
                     )
 
                     film.genre?.takeIf { it.isNotBlank() }?.let { genre ->
-                        Spacer(modifier = Modifier.height(4.dp))
                         Text(
                             text = genre,
-                            color = colorResource(R.color.text).copy(alpha = 0.65f),
-                            fontSize = 13.sp,
-                            fontWeight = FontWeight.Medium,
-                            maxLines = 1
+                            color = colorResource(R.color.text_sub),
+                            fontSize = 12.sp,
+                            fontWeight = FontWeight.Normal,
+                            maxLines = 1,
+                            modifier = Modifier.padding(top = 3.dp)
                         )
                     }
                 }
@@ -163,16 +553,15 @@ fun FilmCard(
                 ) {
                     Text(
                         text = film.releaseYear?.toString() ?: "-",
-                        color = colorResource(R.color.text).copy(alpha = 0.72f),
-                        fontSize = 16.sp,
-                        fontWeight = FontWeight.Medium
+                        color = colorResource(R.color.accent),
+                        fontSize = 13.sp,
+                        fontWeight = FontWeight.Bold
                     )
-
                     Icon(
                         imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight,
                         contentDescription = "Open film",
-                        tint = colorResource(R.color.text).copy(alpha = 0.72f),
-                        modifier = Modifier.size(20.dp)
+                        tint = colorResource(R.color.accent).copy(alpha = 0.6f),
+                        modifier = Modifier.size(18.dp)
                     )
                 }
             }

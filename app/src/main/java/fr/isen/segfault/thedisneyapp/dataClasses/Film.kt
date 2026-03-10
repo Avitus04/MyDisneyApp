@@ -31,7 +31,7 @@ fun fetchFilms(callback: (List<Film>) -> Unit) {
 
             for (child in snapshot.children) {
                 val film = child.getValue(Film::class.java)
-                film?.let { films.add(it) }
+                film?.let { films.add(it.copy(id = child.key ?: it.id)) } // <-- fix ici
             }
 
             callback(films)
