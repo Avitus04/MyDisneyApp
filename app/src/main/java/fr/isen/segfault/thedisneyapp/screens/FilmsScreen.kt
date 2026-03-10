@@ -1,5 +1,8 @@
 package fr.isen.segfault.thedisneyapp.screens
 
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.expandVertically
+import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -27,6 +30,7 @@ import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Face
 import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material.icons.filled.KeyboardArrowUp
+import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -34,7 +38,10 @@ import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -73,46 +80,41 @@ enum class SortOption(val label: String) {
 
 @Composable
 fun FilmsScreen(
-    fetchFilmsByFranchise: (String, String, (List<Film>) -> Unit) -> Unit,
     onFilmClick: (String) -> Unit,
     universeIdFilter: String? = null,
     franchiseIdFilter: String? = null
-)
-{
+) {
     var allFilms by remember { mutableStateOf<List<Film>>(emptyList()) }
     var allUniverses by remember { mutableStateOf<List<Universe>>(emptyList()) }
     var allFranchises by remember { mutableStateOf<List<Franchise>>(emptyList()) }
 
-    // filter state — pre-filled if coming from Universes/Franchises nav
     var selectedUniverseId by remember { mutableStateOf(universeIdFilter) }
     var selectedFranchiseId by remember { mutableStateOf(franchiseIdFilter) }
     var selectedSort by remember { mutableStateOf(SortOption.NAME_ASC) }
 
-    // dropdown visibility
     var showFilterDropdown by remember { mutableStateOf(false) }
     var showSortDropdown by remember { mutableStateOf(false) }
-
-    // sub-dropdown for universe/franchise selection inside filter
     var showUniversePicker by remember { mutableStateOf(false) }
     var showFranchisePicker by remember { mutableStateOf(false) }
+    var searchQuery by remember { mutableStateOf("") }
+    var showSearch by remember { mutableStateOf(false) }
 
     LaunchedEffect(Unit) {
         fetchFilms { allFilms = it }
         fetchUniverses { allUniverses = it }
     }
 
-    // fetch franchises when universe changes
     LaunchedEffect(selectedUniverseId) {
         selectedUniverseId?.let { uid ->
             fetchFranchises(uid) { allFranchises = it }
         } ?: run { allFranchises = emptyList() }
     }
 
-    // apply filters + sort
     val filteredFilms = allFilms
         .filter { film ->
             (selectedUniverseId == null || film.universeId == selectedUniverseId) &&
-                    (selectedFranchiseId == null || film.franchiseId == selectedFranchiseId)
+                    (selectedFranchiseId == null || film.franchiseId == selectedFranchiseId) &&
+                    (searchQuery.isBlank() || film.title.contains(searchQuery, ignoreCase = true))
         }
         .let { list ->
             when (selectedSort) {
@@ -161,19 +163,78 @@ fun FilmsScreen(
                 modifier = Modifier.padding(top = 56.dp)
             )
 
-            Text(
-                text = "${filteredFilms.size} titles",
-                color = colorResource(R.color.text),
-                fontSize = 28.sp,
-                fontWeight = FontWeight.ExtraBold,
-                modifier = Modifier.padding(top = 4.dp)
-            )
+            // title row with search toggle
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(top = 4.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = "${filteredFilms.size} titles",
+                    color = colorResource(R.color.text),
+                    fontSize = 28.sp,
+                    fontWeight = FontWeight.ExtraBold,
+                    modifier = Modifier.weight(1f)
+                )
+                IconButton(onClick = {
+                    showSearch = !showSearch
+                    if (!showSearch) searchQuery = ""
+                }) {
+                    Icon(
+                        imageVector = if (showSearch) Icons.Filled.Close else Icons.Filled.Search,
+                        contentDescription = "Search",
+                        tint = if (showSearch) colorResource(R.color.accent)
+                        else colorResource(R.color.text_sub),
+                        modifier = Modifier.size(22.dp)
+                    )
+                }
+            }
+
+            // animated search field
+            AnimatedVisibility(
+                visible = showSearch,
+                enter = expandVertically(),
+                exit = shrinkVertically()
+            ) {
+                OutlinedTextField(
+                    value = searchQuery,
+                    onValueChange = { searchQuery = it },
+                    placeholder = { Text("Search a film...", color = colorResource(R.color.text_sub), fontSize = 14.sp) },
+                    singleLine = true,
+                    shape = RoundedCornerShape(10.dp),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(top = 8.dp, bottom = 4.dp),
+                    colors = OutlinedTextFieldDefaults.colors(
+                        unfocusedContainerColor = colorResource(R.color.surface),
+                        unfocusedPlaceholderColor = colorResource(R.color.text_sub),
+                        unfocusedBorderColor = colorResource(R.color.card_border),
+                        unfocusedTextColor = colorResource(R.color.text),
+                        focusedContainerColor = colorResource(R.color.surface),
+                        focusedTextColor = colorResource(R.color.text),
+                        focusedPlaceholderColor = colorResource(R.color.text_sub),
+                        focusedBorderColor = colorResource(R.color.accent),
+                        cursorColor = colorResource(R.color.accent)
+                    ),
+                    leadingIcon = {
+                        Icon(Icons.Filled.Search, contentDescription = null, tint = colorResource(R.color.text_sub), modifier = Modifier.size(18.dp))
+                    },
+                    trailingIcon = {
+                        if (searchQuery.isNotEmpty()) {
+                            IconButton(onClick = { searchQuery = "" }) {
+                                Icon(Icons.Filled.Close, contentDescription = "Clear", tint = colorResource(R.color.text_sub), modifier = Modifier.size(16.dp))
+                            }
+                        }
+                    }
+                )
+            }
 
             // filter + sort buttons row
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(top = 16.dp, bottom = 16.dp),
+                    .padding(top = 12.dp, bottom = 16.dp),
                 horizontalArrangement = Arrangement.spacedBy(10.dp)
             ) {
                 // filter button + dropdown
@@ -182,23 +243,16 @@ fun FilmsScreen(
                     OutlinedButton(
                         onClick = { showFilterDropdown = true },
                         shape = RoundedCornerShape(10.dp),
-                        border = BorderStroke(
-                            1.dp,
-                            if (filterActive) colorResource(R.color.accent)
-                            else colorResource(R.color.card_border)
-                        ),
+                        border = BorderStroke(1.dp, if (filterActive) colorResource(R.color.accent) else colorResource(R.color.card_border)),
                         colors = ButtonDefaults.outlinedButtonColors(
-                            containerColor = if (filterActive)
-                                colorResource(R.color.accent_dim)
-                            else colorResource(R.color.card)
+                            containerColor = if (filterActive) colorResource(R.color.accent_dim) else colorResource(R.color.card)
                         ),
                         contentPadding = PaddingValues(horizontal = 14.dp, vertical = 8.dp)
                     ) {
                         Icon(
                             imageVector = Icons.AutoMirrored.Filled.List,
                             contentDescription = "Filter",
-                            tint = if (filterActive) colorResource(R.color.accent)
-                            else colorResource(R.color.text_sub),
+                            tint = if (filterActive) colorResource(R.color.accent) else colorResource(R.color.text_sub),
                             modifier = Modifier.size(16.dp)
                         )
                         Text(
@@ -207,8 +261,7 @@ fun FilmsScreen(
                                 selectedUniverseName != null  -> selectedUniverseName
                                 else -> "Filter"
                             },
-                            color = if (filterActive) colorResource(R.color.accent)
-                            else colorResource(R.color.text_sub),
+                            color = if (filterActive) colorResource(R.color.accent) else colorResource(R.color.text_sub),
                             fontSize = 13.sp,
                             fontWeight = FontWeight.Medium,
                             modifier = Modifier.padding(start = 6.dp),
@@ -219,62 +272,24 @@ fun FilmsScreen(
 
                     DropdownMenu(
                         expanded = showFilterDropdown,
-                        onDismissRequest = {
-                            showFilterDropdown = false
-                            showUniversePicker = false
-                            showFranchisePicker = false
-                        },
-                        modifier = Modifier
-                            .background(colorResource(R.color.card))
-                            .border(1.dp, colorResource(R.color.card_border), RoundedCornerShape(12.dp))
+                        onDismissRequest = { showFilterDropdown = false; showUniversePicker = false; showFranchisePicker = false },
+                        modifier = Modifier.background(colorResource(R.color.card)).border(1.dp, colorResource(R.color.card_border), RoundedCornerShape(12.dp))
                     ) {
-                        // reset filter
                         DropdownMenuItem(
-                            text = {
-                                Text(
-                                    "All films",
-                                    color = colorResource(R.color.text_sub),
-                                    fontSize = 13.sp
-                                )
-                            },
-                            onClick = {
-                                selectedUniverseId = null
-                                selectedFranchiseId = null
-                                showFilterDropdown = false
-                            },
-                            leadingIcon = {
-                                Icon(
-                                    Icons.Filled.Close,
-                                    contentDescription = null,
-                                    tint = colorResource(R.color.text_sub),
-                                    modifier = Modifier.size(16.dp)
-                                )
-                            }
+                            text = { Text("All films", color = colorResource(R.color.text_sub), fontSize = 13.sp) },
+                            onClick = { selectedUniverseId = null; selectedFranchiseId = null; showFilterDropdown = false },
+                            leadingIcon = { Icon(Icons.Filled.Close, contentDescription = null, tint = colorResource(R.color.text_sub), modifier = Modifier.size(16.dp)) }
                         )
 
                         HorizontalDivider(color = colorResource(R.color.card_border))
 
-                        // universe picker
                         DropdownMenuItem(
-                            text = {
-                                Text(
-                                    selectedUniverseName ?: "Universe",
-                                    color = colorResource(R.color.text),
-                                    fontSize = 13.sp,
-                                    fontWeight = FontWeight.Medium
-                                )
-                            },
-                            onClick = {
-                                showUniversePicker = !showUniversePicker
-                                showFranchisePicker = false
-                            },
+                            text = { Text(selectedUniverseName ?: "Universe", color = colorResource(R.color.text), fontSize = 13.sp, fontWeight = FontWeight.Medium) },
+                            onClick = { showUniversePicker = !showUniversePicker; showFranchisePicker = false },
                             trailingIcon = {
                                 Icon(
-                                    if (showUniversePicker) Icons.Filled.KeyboardArrowUp
-                                    else Icons.Filled.KeyboardArrowDown,
-                                    contentDescription = null,
-                                    tint = colorResource(R.color.accent),
-                                    modifier = Modifier.size(16.dp)
+                                    if (showUniversePicker) Icons.Filled.KeyboardArrowUp else Icons.Filled.KeyboardArrowDown,
+                                    contentDescription = null, tint = colorResource(R.color.accent), modifier = Modifier.size(16.dp)
                                 )
                             }
                         )
@@ -285,46 +300,26 @@ fun FilmsScreen(
                                     text = {
                                         Text(
                                             universe.name,
-                                            color = if (selectedUniverseId == universe.id)
-                                                colorResource(R.color.accent)
-                                            else colorResource(R.color.text_sub),
+                                            color = if (selectedUniverseId == universe.id) colorResource(R.color.accent) else colorResource(R.color.text_sub),
                                             fontSize = 12.sp,
                                             modifier = Modifier.padding(start = 12.dp)
                                         )
                                     },
-                                    onClick = {
-                                        selectedUniverseId = universe.id
-                                        selectedFranchiseId = null
-                                        showUniversePicker = false
-                                    }
+                                    onClick = { selectedUniverseId = universe.id; selectedFranchiseId = null; showUniversePicker = false }
                                 )
                             }
                         }
 
-                        // franchise picker — only if universe selected
                         if (selectedUniverseId != null) {
                             HorizontalDivider(color = colorResource(R.color.card_border))
 
                             DropdownMenuItem(
-                                text = {
-                                    Text(
-                                        selectedFranchiseName ?: "Franchise",
-                                        color = colorResource(R.color.text),
-                                        fontSize = 13.sp,
-                                        fontWeight = FontWeight.Medium
-                                    )
-                                },
-                                onClick = {
-                                    showFranchisePicker = !showFranchisePicker
-                                    showUniversePicker = false
-                                },
+                                text = { Text(selectedFranchiseName ?: "Franchise", color = colorResource(R.color.text), fontSize = 13.sp, fontWeight = FontWeight.Medium) },
+                                onClick = { showFranchisePicker = !showFranchisePicker; showUniversePicker = false },
                                 trailingIcon = {
                                     Icon(
-                                        if (showFranchisePicker) Icons.Filled.KeyboardArrowUp
-                                        else Icons.Filled.KeyboardArrowDown,
-                                        contentDescription = null,
-                                        tint = colorResource(R.color.accent),
-                                        modifier = Modifier.size(16.dp)
+                                        if (showFranchisePicker) Icons.Filled.KeyboardArrowUp else Icons.Filled.KeyboardArrowDown,
+                                        contentDescription = null, tint = colorResource(R.color.accent), modifier = Modifier.size(16.dp)
                                     )
                                 }
                             )
@@ -335,18 +330,12 @@ fun FilmsScreen(
                                         text = {
                                             Text(
                                                 franchise.name,
-                                                color = if (selectedFranchiseId == franchise.id)
-                                                    colorResource(R.color.accent)
-                                                else colorResource(R.color.text_sub),
+                                                color = if (selectedFranchiseId == franchise.id) colorResource(R.color.accent) else colorResource(R.color.text_sub),
                                                 fontSize = 12.sp,
                                                 modifier = Modifier.padding(start = 12.dp)
                                             )
                                         },
-                                        onClick = {
-                                            selectedFranchiseId = franchise.id
-                                            showFranchisePicker = false
-                                            showFilterDropdown = false
-                                        }
+                                        onClick = { selectedFranchiseId = franchise.id; showFranchisePicker = false; showFilterDropdown = false }
                                     )
                                 }
                             }
@@ -360,9 +349,7 @@ fun FilmsScreen(
                         onClick = { showSortDropdown = true },
                         shape = RoundedCornerShape(10.dp),
                         border = BorderStroke(1.dp, colorResource(R.color.card_border)),
-                        colors = ButtonDefaults.outlinedButtonColors(
-                            containerColor = colorResource(R.color.card)
-                        ),
+                        colors = ButtonDefaults.outlinedButtonColors(containerColor = colorResource(R.color.card)),
                         contentPadding = PaddingValues(horizontal = 14.dp, vertical = 8.dp)
                     ) {
                         Icon(
@@ -383,36 +370,22 @@ fun FilmsScreen(
                     DropdownMenu(
                         expanded = showSortDropdown,
                         onDismissRequest = { showSortDropdown = false },
-                        modifier = Modifier
-                            .background(colorResource(R.color.card))
-                            .border(1.dp, colorResource(R.color.card_border), RoundedCornerShape(12.dp))
+                        modifier = Modifier.background(colorResource(R.color.card)).border(1.dp, colorResource(R.color.card_border), RoundedCornerShape(12.dp))
                     ) {
                         SortOption.entries.forEach { option ->
                             DropdownMenuItem(
                                 text = {
                                     Text(
                                         option.label,
-                                        color = if (selectedSort == option)
-                                            colorResource(R.color.accent)
-                                        else colorResource(R.color.text),
+                                        color = if (selectedSort == option) colorResource(R.color.accent) else colorResource(R.color.text),
                                         fontSize = 13.sp,
-                                        fontWeight = if (selectedSort == option)
-                                            FontWeight.SemiBold
-                                        else FontWeight.Normal
+                                        fontWeight = if (selectedSort == option) FontWeight.SemiBold else FontWeight.Normal
                                     )
                                 },
-                                onClick = {
-                                    selectedSort = option
-                                    showSortDropdown = false
-                                },
+                                onClick = { selectedSort = option; showSortDropdown = false },
                                 trailingIcon = {
                                     if (selectedSort == option) {
-                                        Icon(
-                                            Icons.Filled.Check,
-                                            contentDescription = null,
-                                            tint = colorResource(R.color.accent),
-                                            modifier = Modifier.size(14.dp)
-                                        )
+                                        Icon(Icons.Filled.Check, contentDescription = null, tint = colorResource(R.color.accent), modifier = Modifier.size(14.dp))
                                     }
                                 }
                             )
@@ -421,6 +394,7 @@ fun FilmsScreen(
                 }
             }
 
+            // films list
             LazyColumn(
                 modifier = Modifier.fillMaxSize(),
                 verticalArrangement = Arrangement.spacedBy(12.dp)
