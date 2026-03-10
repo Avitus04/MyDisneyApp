@@ -1,5 +1,7 @@
 package fr.isen.segfault.thedisneyapp
 
+import android.app.Activity
+import android.content.Intent
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -17,9 +19,11 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
+import com.google.firebase.auth.FirebaseAuth
 import fr.isen.segfault.thedisneyapp.dataClasses.fetchUniverses
 import fr.isen.segfault.thedisneyapp.screens.BottomAppBar
 import fr.isen.segfault.thedisneyapp.screens.LoginScreen
+import fr.isen.segfault.thedisneyapp.screens.ProfilScreen
 import fr.isen.segfault.thedisneyapp.screens.SignupScreen
 import fr.isen.segfault.thedisneyapp.screens.TabBarItem
 import fr.isen.segfault.thedisneyapp.screens.UniversesScreen
@@ -65,16 +69,26 @@ class MainActivity : ComponentActivity() {
                         }
                         composable("Profil") {
                             val context = LocalContext.current
-                            LoginScreen(
-                                onNavigateToSignup = { navController.navigate("signup") },
-                                onLoginSuccess = { /* à gérer */ }
-                            )
-                        }
-                        composable("signup") {
-                            SignupScreen(
-                                onNavigateToLogin = { navController.popBackStack() },
-                                onSignupSuccess = { navController.popBackStack() }
-                            )
+                            val auth = FirebaseAuth.getInstance()
+
+                            // if not connected, go to Login
+                            if (auth.currentUser == null) {
+                                context.startActivity(Intent(context, RegistrationActivity::class.java))
+                                (context as Activity).finish()
+                            } else {
+                                ProfilScreen(
+                                    onLogout = {
+                                        auth.signOut()
+                                        context.startActivity(
+                                            Intent(
+                                                context,
+                                                RegistrationActivity::class.java
+                                            )
+                                        )
+                                        (context as Activity).finish()
+                                    }
+                                )
+                            }
                         }
                     }
                 }

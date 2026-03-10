@@ -12,7 +12,8 @@
     <color name="text">#f3f5f6</color>
     <color name="card">#136878</color>
     <color name="button2">#4cb8c2</color>
-    <color name="red">#ff2c2c</color>
     <color name="signup">#ADD8E6</color>
+    <color name="green">#008000</color>
+    <color name="red">#ff2c2c</color>
 
 </resources>

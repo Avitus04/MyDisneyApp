@@ -20,9 +20,10 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import com.google.firebase.auth.FirebaseAuth
 import fr.isen.segfault.thedisneyapp.screens.LoginScreen
+import fr.isen.segfault.thedisneyapp.screens.ProfilScreen
 import fr.isen.segfault.thedisneyapp.screens.SignupScreen
 import fr.isen.segfault.thedisneyapp.ui.theme.MyDisneyAppTheme
-class AuthActivity : ComponentActivity() {
+class RegistrationActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
@@ -39,23 +40,26 @@ class AuthActivity : ComponentActivity() {
                 val navController = rememberNavController()
                 NavHost(
                     navController = navController,
-                    startDestination = "login"
+                    startDestination = "Login"
                 ) {
-                    composable("login") {
+                    composable("Login") {
                         val context = LocalContext.current
                         LoginScreen(
-                            onNavigateToSignup = { navController.navigate("signup") },
+                            onNavigateToSignup = { navController.navigate("Signup") },
                             onLoginSuccess = {
-                                context.startActivity(Intent(context, MainActivity::class.java))
+                                val intent = Intent(context, MainActivity::class.java).apply {
+                                    putExtra("startDestination", "Profil")
+                                }
+                                context.startActivity(intent)
                                 (context as Activity).finish()
                             }
                         )
                     }
-                    composable("signup") {
+                    composable("Signup") {
                         SignupScreen(
                             onNavigateToLogin = { navController.popBackStack() },
                             onSignupSuccess = {
-                                startActivity(Intent(this@AuthActivity, MainActivity::class.java))
+                                startActivity(Intent(this@RegistrationActivity, MainActivity::class.java))
                                 finish()
                             }
                         )
