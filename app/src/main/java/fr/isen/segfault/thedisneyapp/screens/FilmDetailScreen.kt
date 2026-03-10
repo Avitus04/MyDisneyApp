@@ -126,7 +126,6 @@ fun FilmDetailScreen(
         modifier = Modifier
             .fillMaxSize()
             .background(colorResource(R.color.background))
-            .verticalScroll(rememberScrollState())
             .padding(horizontal = 20.dp, vertical = 16.dp)
     ) {
         Text(
@@ -141,7 +140,7 @@ fun FilmDetailScreen(
         Card(
             modifier = Modifier
                 .fillMaxWidth()
-                .weight(1f),
+                .verticalScroll(rememberScrollState()),
             shape = RoundedCornerShape(24.dp),
             colors = CardDefaults.cardColors(
                 containerColor = colorResource(R.color.card)
@@ -335,8 +334,6 @@ fun FilmDetailScreen(
                         }
                     }
                 }
-
-                Spacer(modifier = Modifier.weight(1f))
             }
         }
     }
