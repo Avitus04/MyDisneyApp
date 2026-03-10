@@ -1,6 +1,5 @@
 package fr.isen.segfault.thedisneyapp
 
-import android.content.Intent
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -12,21 +11,17 @@ import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.outlined.Home
 import androidx.compose.material.icons.outlined.Person
-import androidx.compose.material3.Icon
-import androidx.compose.material3.NavigationBar
-import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Text
-import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import fr.isen.segfault.thedisneyapp.dataClasses.fetchUniverses
+import fr.isen.segfault.thedisneyapp.screens.BottomAppBar
 import fr.isen.segfault.thedisneyapp.screens.LoginScreen
 import fr.isen.segfault.thedisneyapp.screens.SignupScreen
+import fr.isen.segfault.thedisneyapp.screens.TabBarItem
 import fr.isen.segfault.thedisneyapp.screens.UniversesScreen
 import fr.isen.segfault.thedisneyapp.ui.theme.MyDisneyAppTheme
 

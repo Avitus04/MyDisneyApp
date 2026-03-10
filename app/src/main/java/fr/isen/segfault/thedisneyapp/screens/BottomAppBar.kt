@@ -1,4 +1,4 @@
-package fr.isen.segfault.thedisneyapp
+package fr.isen.segfault.thedisneyapp.screens
 
 import androidx.compose.material3.Icon
 import androidx.compose.material3.NavigationBar
@@ -13,6 +13,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.colorResource
 import androidx.navigation.NavController
+import fr.isen.segfault.thedisneyapp.R
 
 data class TabBarItem(
     val title: String,

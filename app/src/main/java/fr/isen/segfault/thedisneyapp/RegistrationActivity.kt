@@ -18,17 +18,22 @@ import androidx.core.view.WindowCompat
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
+import com.google.firebase.auth.FirebaseAuth
 import fr.isen.segfault.thedisneyapp.screens.LoginScreen
 import fr.isen.segfault.thedisneyapp.screens.SignupScreen
 import fr.isen.segfault.thedisneyapp.ui.theme.MyDisneyAppTheme
-
-class RegistrationActivity : ComponentActivity() {
+class AuthActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        enableEdgeToEdge()
-        WindowCompat.getInsetsController(window, window.decorView).apply { // used for the systems var like the clock on top of the screen
-            isAppearanceLightStatusBars = false // false = white icons, true = dark icons
+
+        // check if the user is already connected
+        val auth = FirebaseAuth.getInstance()
+        if (auth.currentUser != null) {
+            startActivity(Intent(this, MainActivity::class.java))
+            finish()
+            return
         }
+
         setContent {
             MyDisneyAppTheme {
                 val navController = rememberNavController()
@@ -42,34 +47,21 @@ class RegistrationActivity : ComponentActivity() {
                             onNavigateToSignup = { navController.navigate("signup") },
                             onLoginSuccess = {
                                 context.startActivity(Intent(context, MainActivity::class.java))
-                                (context as Activity).finish() // ferme RegistrationActivity
+                                (context as Activity).finish()
                             }
                         )
                     }
                     composable("signup") {
                         SignupScreen(
                             onNavigateToLogin = { navController.popBackStack() },
-                            onSignupSuccess = { navController.navigate("login") }
+                            onSignupSuccess = {
+                                startActivity(Intent(this@AuthActivity, MainActivity::class.java))
+                                finish()
+                            }
                         )
                     }
                 }
             }
         }
-    }
-}
-
-@Composable
-fun Greeting2(name: String, modifier: Modifier = Modifier) {
-    Text(
-        text = "Hello $name!",
-        modifier = modifier
-    )
-}
-
-@Preview(showBackground = true)
-@Composable
-fun GreetingPreview2() {
-    MyDisneyAppTheme {
-        Greeting2("Android")
     }
 }
