@@ -455,7 +455,7 @@ fun OwnedFilmCard(
                 )
             ) {
                 Text(
-                    text = "Remove from owned",
+                    text = "Remove",
                     fontSize = 10.sp,
                     color = colorResource(R.color.red)
                 )
