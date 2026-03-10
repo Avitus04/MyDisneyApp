@@ -3,9 +3,7 @@ package fr.isen.segfault.thedisneyapp.screens
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -13,9 +11,19 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxHeight
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -25,62 +33,49 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.colorResource
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import fr.isen.segfault.thedisneyapp.R
-import fr.isen.segfault.thedisneyapp.dataClasses.Universe
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.fillMaxHeight
-import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.lazy.items
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
-import androidx.compose.material3.Icon
-import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.res.painterResource
 import fr.isen.segfault.thedisneyapp.dataClasses.Film
+import fr.isen.segfault.thedisneyapp.dataClasses.Franchise
 import fr.isen.segfault.thedisneyapp.dataClasses.fetchFilms
-import fr.isen.segfault.thedisneyapp.dataClasses.getUniverseLogoRes
-
-data class UniverseUi(
-    val id: String = "",
-    val name: String = "",
-    val filmCount: Int = 0
-)
 
 @Composable
-fun UniversesScreen(
-    modifier: Modifier = Modifier,
-    fetchUniverses: ((List<Universe>) -> Unit) -> Unit,
-    onUniverseClick: (String) -> Unit
+fun FranchisesScreen(
+    universeId: String,
+    fetchFranchises: (String, (List<Franchise>) -> Unit) -> Unit,
+    onFranchiseClick: (String) -> Unit
 ) {
-    var universes by remember { mutableStateOf<List<Universe>>(emptyList()) }
+    var franchises by remember { mutableStateOf<List<Franchise>>(emptyList()) }
     var films by remember { mutableStateOf<List<Film>>(emptyList()) }
 
-    LaunchedEffect(Unit) {
-        fetchUniverses { universes = it }
+    LaunchedEffect(universeId) {
+        fetchFranchises(universeId) { franchises = it }
         fetchFilms { films = it }
     }
 
-    val universesUi = universes.map { universe ->
-        UniverseUi(
-            id = universe.id,
-            name = universe.name,
-            filmCount = films.count { it.universeId == universe.id }
+    val franchisesUi = franchises.map { franchise ->
+        Franchise(
+            id = franchise.id,
+            name = franchise.name,
+            filmCount = films.count {
+                it.universeId == universeId && it.franchiseId == franchise.id
+            }
         )
     }.sortedBy { it.name }
 
     Column(
-        modifier = modifier
+        modifier = Modifier
             .fillMaxSize()
             .background(colorResource(R.color.background))
             .padding(horizontal = 20.dp, vertical = 16.dp)
     ) {
         Text(
-            text = "Universes",
+            text = "Franchises",
             color = colorResource(R.color.text),
             fontSize = 30.sp,
             fontWeight = FontWeight.ExtraBold
@@ -92,12 +87,12 @@ fun UniversesScreen(
             modifier = Modifier.fillMaxSize(),
             verticalArrangement = Arrangement.spacedBy(14.dp)
         ) {
-            items(universesUi) { universe ->
-                UniverseCard(
-                    universe = universe,
-                    logoRes =   getUniverseLogoRes(universe.id),
+            items(franchisesUi) { franchise ->
+                FranchiseCard(
+                    franchise = franchise,
+                    //logoRes = getFranchiseLogoRes(franchise.id),
                     onClick = {
-                        onUniverseClick(universe.id)
+                        onFranchiseClick(franchise.id)
                     }
                 )
             }
@@ -106,9 +101,9 @@ fun UniversesScreen(
 }
 
 @Composable
-fun UniverseCard(
-    universe: UniverseUi,
-    logoRes: Int,
+fun FranchiseCard(
+    franchise: Franchise,
+    //logoRes: Int,
     onClick: () -> Unit
 ) {
     Card(
@@ -118,7 +113,8 @@ fun UniverseCard(
             .border(
                 width = 1.dp,
                 color = colorResource(R.color.text),
-                shape = RoundedCornerShape(24.dp))
+                shape = RoundedCornerShape(24.dp)
+            )
             .clickable { onClick() },
         shape = RoundedCornerShape(20.dp),
         colors = CardDefaults.cardColors(
@@ -130,7 +126,7 @@ fun UniverseCard(
             modifier = Modifier.fillMaxSize(),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            Box(
+            /*Box(
                 modifier = Modifier
                     .fillMaxHeight()
                     .width(92.dp)
@@ -141,13 +137,13 @@ fun UniverseCard(
             ) {
                 Image(
                     painter = painterResource(id = logoRes),
-                    contentDescription = "${universe.name} logo",
+                    contentDescription = "${franchise.name} logo",
                     modifier = Modifier
-                        .fillMaxSize(),
-
+                        .fillMaxSize()
+                        .padding(horizontal = 10.dp, vertical = 12.dp),
                     contentScale = ContentScale.Fit
                 )
-            }
+            }*/
 
             Row(
                 modifier = Modifier
@@ -156,7 +152,7 @@ fun UniverseCard(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Text(
-                    text = universe.name,
+                    text = franchise.name,
                     modifier = Modifier.weight(1f),
                     color = colorResource(R.color.text),
                     fontSize = 18.sp,
@@ -169,7 +165,7 @@ fun UniverseCard(
                     horizontalArrangement = Arrangement.spacedBy(4.dp)
                 ) {
                     Text(
-                        text = "${universe.filmCount} films",
+                        text = "${franchise.filmCount} films",
                         color = colorResource(R.color.text).copy(alpha = 0.72f),
                         fontSize = 16.sp,
                         fontWeight = FontWeight.Medium
@@ -177,7 +173,7 @@ fun UniverseCard(
 
                     Icon(
                         imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight,
-                        contentDescription = "Open universe",
+                        contentDescription = "Open franchise",
                         tint = colorResource(R.color.text).copy(alpha = 0.72f),
                         modifier = Modifier.size(20.dp)
                     )

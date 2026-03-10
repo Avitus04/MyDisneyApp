@@ -8,7 +8,8 @@ import com.google.firebase.database.ValueEventListener
 
 data class Franchise(
     val id: String = "",
-    val name: String = ""
+    val name: String = "",
+    val filmCount: Int = 0
 )
 
 fun fetchFranchises(
