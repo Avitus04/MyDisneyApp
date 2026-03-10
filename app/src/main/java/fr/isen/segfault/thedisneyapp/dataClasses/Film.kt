@@ -69,3 +69,22 @@ fun fetchFilmsByFranchise(
         override fun onCancelled(error: DatabaseError) {}
     })
 }
+
+fun fetchFilmById(
+    filmId: String,
+    callback: (Film?) -> Unit
+) {
+    val database = Firebase.database
+    val ref = database.getReference("films").child(filmId)
+
+    ref.addListenerForSingleValueEvent(object : ValueEventListener {
+        override fun onDataChange(snapshot: DataSnapshot) {
+            val film = snapshot.getValue(Film::class.java)
+            callback(film)
+        }
+
+        override fun onCancelled(error: DatabaseError) {
+            callback(null)
+        }
+    })
+}
