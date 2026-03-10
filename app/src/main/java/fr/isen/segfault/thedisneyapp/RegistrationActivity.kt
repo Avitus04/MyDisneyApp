@@ -5,22 +5,12 @@ import android.content.Intent
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
-import androidx.activity.enableEdgeToEdge
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.padding
-import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Text
-import androidx.compose.runtime.Composable
-import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.tooling.preview.Preview
-import androidx.core.view.WindowCompat
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import com.google.firebase.auth.FirebaseAuth
 import fr.isen.segfault.thedisneyapp.screens.LoginScreen
-import fr.isen.segfault.thedisneyapp.screens.ProfilScreen
 import fr.isen.segfault.thedisneyapp.screens.SignupScreen
 import fr.isen.segfault.thedisneyapp.ui.theme.MyDisneyAppTheme
 class RegistrationActivity : ComponentActivity() {

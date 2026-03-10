@@ -22,9 +22,7 @@ import androidx.navigation.compose.rememberNavController
 import com.google.firebase.auth.FirebaseAuth
 import fr.isen.segfault.thedisneyapp.dataClasses.fetchUniverses
 import fr.isen.segfault.thedisneyapp.screens.BottomAppBar
-import fr.isen.segfault.thedisneyapp.screens.LoginScreen
-import fr.isen.segfault.thedisneyapp.screens.ProfilScreen
-import fr.isen.segfault.thedisneyapp.screens.SignupScreen
+import fr.isen.segfault.thedisneyapp.screens.ProfileScreen
 import fr.isen.segfault.thedisneyapp.screens.TabBarItem
 import fr.isen.segfault.thedisneyapp.screens.UniversesScreen
 import fr.isen.segfault.thedisneyapp.ui.theme.MyDisneyAppTheme
@@ -44,7 +42,7 @@ class MainActivity : ComponentActivity() {
                         unselectedIcon = Icons.Outlined.Home
                     ),
                     TabBarItem(
-                        title = "Profil",
+                        title = "Profile",
                         selectedIcon = Icons.Filled.Person,
                         unselectedIcon = Icons.Outlined.Person
                     )
@@ -67,7 +65,7 @@ class MainActivity : ComponentActivity() {
                         composable("Universes") {
                             UniversesScreen(fetchUniverses = ::fetchUniverses)
                         }
-                        composable("Profil") {
+                        composable("Profile") {
                             val context = LocalContext.current
                             val auth = FirebaseAuth.getInstance()
 
@@ -76,7 +74,7 @@ class MainActivity : ComponentActivity() {
                                 context.startActivity(Intent(context, RegistrationActivity::class.java))
                                 (context as Activity).finish()
                             } else {
-                                ProfilScreen(
+                                ProfileScreen(
                                     onLogout = {
                                         auth.signOut()
                                         context.startActivity(
