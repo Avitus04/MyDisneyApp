@@ -22,8 +22,14 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
 import com.google.firebase.auth.FirebaseAuth
+import fr.isen.segfault.thedisneyapp.dataClasses.fetchFilmById
+import fr.isen.segfault.thedisneyapp.dataClasses.fetchFilmsByFranchise
+import fr.isen.segfault.thedisneyapp.dataClasses.fetchFranchises
 import fr.isen.segfault.thedisneyapp.dataClasses.fetchUniverses
 import fr.isen.segfault.thedisneyapp.screens.BottomAppBar
+import fr.isen.segfault.thedisneyapp.screens.FilmDetailScreen
+import fr.isen.segfault.thedisneyapp.screens.FilmsScreen
+import fr.isen.segfault.thedisneyapp.screens.FranchisesScreen
 import fr.isen.segfault.thedisneyapp.screens.ProfileScreen
 import fr.isen.segfault.thedisneyapp.screens.TabBarItem
 import fr.isen.segfault.thedisneyapp.screens.UniversesScreen
