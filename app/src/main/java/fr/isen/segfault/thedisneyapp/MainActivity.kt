@@ -126,6 +126,7 @@ class MainActivity : ComponentActivity() {
                             )
                         }
 
+
                         composable("Profile") {
                             val context = LocalContext.current
                             val auth = FirebaseAuth.getInstance()
