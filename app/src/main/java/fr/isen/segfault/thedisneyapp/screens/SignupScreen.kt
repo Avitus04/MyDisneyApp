@@ -36,6 +36,8 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.auth.userProfileChangeRequest
+import com.google.firebase.database.FirebaseDatabase
 import fr.isen.segfault.thedisneyapp.R
 import fr.isen.segfault.thedisneyapp.components.EmailField
 import fr.isen.segfault.thedisneyapp.components.PasswordField
@@ -203,7 +205,27 @@ fun SignupScreen(
                                 errorMessage = "Password must be at least 8 characters"
                             else -> {
                                 auth.createUserWithEmailAndPassword(email, password)
-                                    .addOnSuccessListener { onSignupSuccess() }
+                                    .addOnSuccessListener { authResult ->
+                                        val user = authResult.user
+
+                                        // save the username in Firebase Auth profile
+                                        val profileUpdates = userProfileChangeRequest {
+                                            displayName = username
+                                        }
+                                        user?.updateProfile(profileUpdates)
+
+                                        // save the user in Realtime Database
+                                        val db = FirebaseDatabase.getInstance().reference
+                                        db.child("users").child(user!!.uid).setValue(
+                                            mapOf(
+                                                "uid" to user.uid,
+                                                "username" to username,
+                                                "email" to email
+                                            )
+                                        )
+
+                                        onSignupSuccess()
+                                    }
                                     .addOnFailureListener { errorMessage = it.message }
                             }
                         }

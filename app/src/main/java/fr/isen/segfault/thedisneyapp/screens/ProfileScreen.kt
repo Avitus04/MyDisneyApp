@@ -24,6 +24,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.database.FirebaseDatabase
 import fr.isen.segfault.thedisneyapp.R
 import fr.isen.segfault.thedisneyapp.components.PasswordField
 
@@ -34,6 +35,21 @@ fun ProfileScreen(
 ) {
     val auth = FirebaseAuth.getInstance()
     val user = auth.currentUser
+
+    // fetch username from DB with LaunchedEffect
+    var username by remember { mutableStateOf(user?.displayName ?: "") }
+    LaunchedEffect(user?.uid) {
+        user?.uid?.let { uid ->
+            FirebaseDatabase.getInstance().reference
+                .child("users").child(uid)
+                .get()
+                .addOnSuccessListener { snapshot ->
+                    username = snapshot.child("username").getValue(String::class.java)
+                        ?: user.displayName
+                                ?: "No Username"
+                }
+        }
+    }
 
     var newPassword by remember { mutableStateOf("") }
     var confirmPassword by remember { mutableStateOf("") }
@@ -112,7 +128,7 @@ fun ProfileScreen(
 
             // username
             Text(
-                text = user?.displayName ?: "No Username",
+                text = username,
                 fontSize = 22.sp,
                 fontWeight = FontWeight.Bold,
                 color = colorResource(R.color.text),
