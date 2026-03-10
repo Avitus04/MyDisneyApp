@@ -323,7 +323,7 @@ fun FilmDetailScreen(
                     Spacer(modifier = Modifier.height(8.dp))
 
                     if (availableUsers.isEmpty()) {
-                        DetailTagButton(text = "No user currently offers this film")
+                        DetailTagButton(text = "No user currently owned this film")
                     } else {
                         Column(
                             verticalArrangement = Arrangement.spacedBy(10.dp)
