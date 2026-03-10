@@ -90,12 +90,14 @@ fun FilmsScreen(
 
     var selectedUniverseId by remember { mutableStateOf(universeIdFilter) }
     var selectedFranchiseId by remember { mutableStateOf(franchiseIdFilter) }
+    var selectedGenre by remember { mutableStateOf<String?>(null) }
     var selectedSort by remember { mutableStateOf(SortOption.NAME_ASC) }
 
     var showFilterDropdown by remember { mutableStateOf(false) }
     var showSortDropdown by remember { mutableStateOf(false) }
     var showUniversePicker by remember { mutableStateOf(false) }
     var showFranchisePicker by remember { mutableStateOf(false) }
+    var showGenrePicker by remember { mutableStateOf(false) }
     var searchQuery by remember { mutableStateOf("") }
     var showSearch by remember { mutableStateOf(false) }
 
@@ -110,10 +112,13 @@ fun FilmsScreen(
         } ?: run { allFranchises = emptyList() }
     }
 
+    val allGenres = allFilms.mapNotNull { it.genre }.filter { it.isNotBlank() }.distinct().sorted()
+
     val filteredFilms = allFilms
         .filter { film ->
             (selectedUniverseId == null || film.universeId == selectedUniverseId) &&
                     (selectedFranchiseId == null || film.franchiseId == selectedFranchiseId) &&
+                    (selectedGenre == null || film.genre == selectedGenre) &&
                     (searchQuery.isBlank() || film.title.contains(searchQuery, ignoreCase = true))
         }
         .let { list ->
@@ -125,6 +130,7 @@ fun FilmsScreen(
             }
         }
 
+    val filterActive = selectedUniverseId != null || selectedFranchiseId != null || selectedGenre != null
     val selectedUniverseName = allUniverses.find { it.id == selectedUniverseId }?.name
     val selectedFranchiseName = allFranchises.find { it.id == selectedFranchiseId }?.name
 
@@ -272,14 +278,63 @@ fun FilmsScreen(
 
                     DropdownMenu(
                         expanded = showFilterDropdown,
-                        onDismissRequest = { showFilterDropdown = false; showUniversePicker = false; showFranchisePicker = false },
+                        onDismissRequest = { showFilterDropdown = false; showUniversePicker = false; showFranchisePicker = false; showGenrePicker = false  },
                         modifier = Modifier.background(colorResource(R.color.card)).border(1.dp, colorResource(R.color.card_border), RoundedCornerShape(12.dp))
                     ) {
                         DropdownMenuItem(
                             text = { Text("All films", color = colorResource(R.color.text_sub), fontSize = 13.sp) },
-                            onClick = { selectedUniverseId = null; selectedFranchiseId = null; showFilterDropdown = false },
+                            onClick = { selectedUniverseId = null; selectedFranchiseId = null; selectedGenre = null; showFilterDropdown = false },
                             leadingIcon = { Icon(Icons.Filled.Close, contentDescription = null, tint = colorResource(R.color.text_sub), modifier = Modifier.size(16.dp)) }
                         )
+
+                        HorizontalDivider(color = colorResource(R.color.card_border))
+
+// genre picker
+                        DropdownMenuItem(
+                            text = {
+                                Text(
+                                    selectedGenre ?: "Genre",
+                                    color = colorResource(R.color.text),
+                                    fontSize = 13.sp,
+                                    fontWeight = FontWeight.Medium
+                                )
+                            },
+                            onClick = {
+                                showGenrePicker = !showGenrePicker
+                                showUniversePicker = false
+                                showFranchisePicker = false
+                            },
+                            trailingIcon = {
+                                Icon(
+                                    if (showGenrePicker) Icons.Filled.KeyboardArrowUp
+                                    else Icons.Filled.KeyboardArrowDown,
+                                    contentDescription = null,
+                                    tint = colorResource(R.color.accent),
+                                    modifier = Modifier.size(16.dp)
+                                )
+                            }
+                        )
+
+                        if (showGenrePicker) {
+                            allGenres.forEach { genre ->
+                                DropdownMenuItem(
+                                    text = {
+                                        Text(
+                                            genre,
+                                            color = if (selectedGenre == genre) colorResource(R.color.accent)
+                                            else colorResource(R.color.text_sub),
+                                            fontSize = 12.sp,
+                                            modifier = Modifier.padding(start = 12.dp)
+                                        )
+                                    },
+                                    onClick = {
+                                        selectedGenre = genre
+                                        showGenrePicker = false
+                                        showFilterDropdown = false
+                                    }
+                                )
+                            }
+                        }
 
                         HorizontalDivider(color = colorResource(R.color.card_border))
 
