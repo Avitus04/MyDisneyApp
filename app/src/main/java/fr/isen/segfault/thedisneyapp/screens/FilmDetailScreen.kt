@@ -33,12 +33,22 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil3.compose.AsyncImage
+import com.google.firebase.Firebase
+import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.database.DataSnapshot
+import com.google.firebase.database.DatabaseError
+import com.google.firebase.database.FirebaseDatabase
+import com.google.firebase.database.ValueEventListener
+import com.google.firebase.database.database
 import fr.isen.segfault.thedisneyapp.R
 import fr.isen.segfault.thedisneyapp.dataClasses.Film
 import fr.isen.segfault.thedisneyapp.dataClasses.TmdbMovieSearchResponse
+import fr.isen.segfault.thedisneyapp.dataClasses.UserFilmStatus
 import fr.isen.segfault.thedisneyapp.dataClasses.UserOwnerUi
+import fr.isen.segfault.thedisneyapp.dataClasses.fetchCurrentUserFilmStatus
 import fr.isen.segfault.thedisneyapp.dataClasses.fetchUsersWhoOwnAndWantToGetRid
 import fr.isen.segfault.thedisneyapp.dataClasses.getPosterUrl
+import fr.isen.segfault.thedisneyapp.dataClasses.saveFilmStatus
 import fr.isen.segfault.thedisneyapp.network.TmdbApiClient
 
 @Composable
@@ -48,9 +58,10 @@ fun FilmDetailScreen(
 ) {
     var film by remember { mutableStateOf<Film?>(null) }
     var availableUsers by remember { mutableStateOf<List<UserOwnerUi>>(emptyList()) }
-    var own by remember { mutableStateOf(false) }
-    var dvd by remember { mutableStateOf(false) }
-    var getRid by remember { mutableStateOf(false) }
+    var watched by remember { mutableStateOf(false) }
+    var wantToWatch by remember { mutableStateOf(false) }
+    var ownDvdBluray by remember { mutableStateOf(false) }
+    var wantToGetRid by remember { mutableStateOf(false) }
     var posterUrl by remember { mutableStateOf<String?>(null) }
 
 
@@ -86,9 +97,28 @@ fun FilmDetailScreen(
         fetchUsersWhoOwnAndWantToGetRid(filmId) {
             availableUsers = it
         }
+        fetchCurrentUserFilmStatus(filmId) { status ->
+            if (status != null) {
+                watched = status.watched
+                wantToWatch = status.wantToWatch
+                ownDvdBluray = status.ownDvdBluray
+                wantToGetRid = status.wantToGetRid
+            }
+        }
+
     }
 
     val currentFilm = film
+
+    fun persistStatus() {
+        saveFilmStatus(
+            filmId = filmId,
+            watched = watched,
+            wantToWatch = wantToWatch,
+            ownDvdBluray = ownDvdBluray,
+            wantToGetRid = wantToGetRid
+        )
+    }
 
     Column(
         modifier = Modifier
@@ -185,34 +215,65 @@ fun FilmDetailScreen(
 
                 Spacer(modifier = Modifier.height(28.dp))
 
-                Row(
+                Column(
                     modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(12.dp),
-                    verticalAlignment = Alignment.CenterVertically
+                    verticalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
-                    StatusButtonWithText(
-                        text = if (own) "Owned" else "Not owned",
-                        color = colorResource(R.color.status_green),
-                        isActive = own,
-                        onClick = { own = !own },
-                        modifier = Modifier.weight(1f)
-                    )
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(12.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        StatusButtonWithText(
+                            text = "Watched",
+                            color = colorResource(R.color.status_green),
+                            isActive = watched,
+                            onClick = {
+                                watched = !watched
+                                persistStatus()
+                            },
+                            modifier = Modifier.weight(1f)
+                        )
 
-                    StatusButtonWithText(
-                        text = if (dvd) "DVD / Blu-ray" else "No DVD",
-                        color = colorResource(R.color.status_red),
-                        isActive = dvd,
-                        onClick = { dvd = !dvd },
-                        modifier = Modifier.weight(1f)
-                    )
+                        StatusButtonWithText(
+                            text = "Want to watch",
+                            color = colorResource(R.color.status_blue),
+                            isActive = wantToWatch,
+                            onClick = {
+                                wantToWatch = !wantToWatch
+                                persistStatus()
+                            },
+                            modifier = Modifier.weight(1f)
+                        )
+                    }
 
-                    StatusButtonWithText(
-                        text = if (getRid) "Want to get rid of" else "Keep",
-                        color = colorResource(R.color.status_yellow),
-                        isActive = getRid,
-                        onClick = { getRid = !getRid },
-                        modifier = Modifier.weight(1f)
-                    )
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(12.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        StatusButtonWithText(
+                            text = "Own DVD/Blue Ray",
+                            color = colorResource(R.color.status_red),
+                            isActive = ownDvdBluray,
+                            onClick = {
+                                ownDvdBluray = !ownDvdBluray
+                                persistStatus()
+                            },
+                            modifier = Modifier.weight(1f)
+                        )
+
+                        StatusButtonWithText(
+                            text = "Get rid",
+                            color = colorResource(R.color.status_yellow),
+                            isActive = wantToGetRid,
+                            onClick = {
+                                wantToGetRid = !wantToGetRid
+                                persistStatus()
+                            },
+                            modifier = Modifier.weight(1f)
+                        )
+                    }
                 }
 
                 Spacer(modifier = Modifier.height(28.dp))
@@ -332,9 +393,10 @@ fun StatusButtonWithText(
     modifier: Modifier = Modifier
 ) {
     Row(
-        modifier = modifier.clickable { onClick() },
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.Center
+        modifier = modifier
+            .clickable { onClick() }
+            .padding(vertical = 4.dp),
+        verticalAlignment = Alignment.CenterVertically
     ) {
         Box(
             modifier = Modifier
@@ -350,10 +412,11 @@ fun StatusButtonWithText(
                 )
         )
 
-        Spacer(modifier = Modifier.width(8.dp))
+        Spacer(modifier = Modifier.width(10.dp))
 
         Text(
             text = text,
+            modifier = Modifier.weight(1f),
             color = colorResource(R.color.text),
             fontSize = 13.sp,
             fontWeight = FontWeight.Medium,
@@ -392,3 +455,5 @@ fun UserOwnerCard(user: UserOwnerUi) {
         }
     }
 }
+
+

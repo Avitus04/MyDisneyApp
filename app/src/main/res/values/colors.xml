@@ -33,4 +33,5 @@
     <color name="status_green">#9BE39B</color>
     <color name="status_red">#F2B0B0</color>
     <color name="status_yellow">#E7D37A</color>
+    <color name="status_blue">#8DBBFF</color>
 </resources>
