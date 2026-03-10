@@ -27,14 +27,19 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.colorResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import coil3.compose.AsyncImage
 import fr.isen.segfault.thedisneyapp.R
 import fr.isen.segfault.thedisneyapp.dataClasses.Film
+import fr.isen.segfault.thedisneyapp.dataClasses.TmdbMovieSearchResponse
 import fr.isen.segfault.thedisneyapp.dataClasses.UserOwnerUi
 import fr.isen.segfault.thedisneyapp.dataClasses.fetchUsersWhoOwnAndWantToGetRid
+import fr.isen.segfault.thedisneyapp.dataClasses.getPosterUrl
+import fr.isen.segfault.thedisneyapp.network.TmdbApiClient
 
 @Composable
 fun FilmDetailScreen(
@@ -46,12 +51,38 @@ fun FilmDetailScreen(
     var own by remember { mutableStateOf(false) }
     var dvd by remember { mutableStateOf(false) }
     var getRid by remember { mutableStateOf(false) }
+    var posterUrl by remember { mutableStateOf<String?>(null) }
 
 
     LaunchedEffect(filmId) {
-        fetchFilmById(filmId) {
-            film = it
+        fetchFilmById(filmId) { loadedFilm ->
+            film = loadedFilm
+
+            loadedFilm?.let { current ->
+                val call = TmdbApiClient.retrofit.searchMovie(
+                    title = current.title,
+                    year = current.releaseYear
+                )
+
+                call.enqueue(object : retrofit2.Callback<TmdbMovieSearchResponse> {
+                    override fun onResponse(
+                        call: retrofit2.Call<TmdbMovieSearchResponse>,
+                        response: retrofit2.Response<TmdbMovieSearchResponse>
+                    ) {
+                        val movie = response.body()?.results?.firstOrNull()
+                        posterUrl = getPosterUrl(movie?.poster_path)
+                    }
+
+                    override fun onFailure(
+                        call: retrofit2.Call<TmdbMovieSearchResponse>,
+                        t: Throwable
+                    ) {
+                        posterUrl = null
+                    }
+                })
+            }
         }
+
         fetchUsersWhoOwnAndWantToGetRid(filmId) {
             availableUsers = it
         }
@@ -99,20 +130,27 @@ fun FilmDetailScreen(
                             .border(
                                 width = 1.dp,
                                 color = colorResource(R.color.text).copy(alpha = 0.25f),
-                                shape = RoundedCornerShape(18.dp)
                             )
                             .background(
                                 color = colorResource(R.color.text).copy(alpha = 0.08f),
-                                shape = RoundedCornerShape(18.dp)
                             ),
                         contentAlignment = Alignment.Center
                     ) {
-                        Text(
-                            text = "Poster",
-                            color = colorResource(R.color.text).copy(alpha = 0.65f),
-                            fontSize = 16.sp,
-                            fontWeight = FontWeight.Medium
-                        )
+                        if (posterUrl != null) {
+                            AsyncImage(
+                                model = posterUrl,
+                                contentDescription = currentFilm?.title,
+                                modifier = Modifier.fillMaxSize(),
+                                contentScale = ContentScale.Crop
+                            )
+                        } else {
+                            Text(
+                                text = "Poster",
+                                color = colorResource(R.color.text).copy(alpha = 0.65f),
+                                fontSize = 16.sp,
+                                fontWeight = FontWeight.Medium
+                            )
+                        }
                     }
 
                     Spacer(modifier = Modifier.width(20.dp))
@@ -142,28 +180,39 @@ fun FilmDetailScreen(
                         )
 
                         Spacer(modifier = Modifier.height(6.dp))
-
-                        StatusRow(
-                            text = if (own) "Own" else "Not owned",
-                            color = colorResource(R.color.status_green),
-                            isActive = own,
-                            onClick = { own = !own }
-                        )
-
-                        StatusRow(
-                            text = if (dvd) "DVD / Blu-ray" else "No DVD / Blu-ray",
-                            color = colorResource(R.color.status_red),
-                            isActive = dvd,
-                            onClick = { dvd = !dvd }
-                        )
-
-                        StatusRow(
-                            text = if (getRid) "Want to get rid of" else "Keep",
-                            color = colorResource(R.color.status_yellow),
-                            isActive = getRid,
-                            onClick = { getRid = !getRid }
-                        )
                     }
+                }
+
+                Spacer(modifier = Modifier.height(28.dp))
+
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(12.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    StatusButtonWithText(
+                        text = if (own) "Owned" else "Not owned",
+                        color = colorResource(R.color.status_green),
+                        isActive = own,
+                        onClick = { own = !own },
+                        modifier = Modifier.weight(1f)
+                    )
+
+                    StatusButtonWithText(
+                        text = if (dvd) "DVD / Blu-ray" else "No DVD",
+                        color = colorResource(R.color.status_red),
+                        isActive = dvd,
+                        onClick = { dvd = !dvd },
+                        modifier = Modifier.weight(1f)
+                    )
+
+                    StatusButtonWithText(
+                        text = if (getRid) "Want to get rid of" else "Keep",
+                        color = colorResource(R.color.status_yellow),
+                        isActive = getRid,
+                        onClick = { getRid = !getRid },
+                        modifier = Modifier.weight(1f)
+                    )
                 }
 
                 Spacer(modifier = Modifier.height(28.dp))
@@ -275,37 +324,40 @@ fun DetailTagButton(
 }
 
 @Composable
-fun StatusRow(
+fun StatusButtonWithText(
     text: String,
     color: Color,
     isActive: Boolean,
-    onClick: () -> Unit
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier
 ) {
     Row(
-        modifier = Modifier.clickable { onClick() },
-        verticalAlignment = Alignment.CenterVertically
+        modifier = modifier.clickable { onClick() },
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.Center
     ) {
         Box(
             modifier = Modifier
-                .size(28.dp)
+                .size(20.dp)
                 .background(
                     color = if (isActive) color else color.copy(alpha = 0.30f),
-                    shape = RoundedCornerShape(8.dp)
+                    shape = RoundedCornerShape(6.dp)
                 )
                 .border(
                     width = 1.5.dp,
                     color = color,
-                    shape = RoundedCornerShape(8.dp)
+                    shape = RoundedCornerShape(6.dp)
                 )
         )
 
-        Spacer(modifier = Modifier.width(10.dp))
+        Spacer(modifier = Modifier.width(8.dp))
 
         Text(
             text = text,
             color = colorResource(R.color.text),
-            fontSize = 15.sp,
-            fontWeight = FontWeight.Medium
+            fontSize = 13.sp,
+            fontWeight = FontWeight.Medium,
+            maxLines = 2
         )
     }
 }
