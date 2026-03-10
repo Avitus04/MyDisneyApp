@@ -152,6 +152,9 @@ class MainActivity : ComponentActivity() {
                                             )
                                         )
                                         (context as Activity).finish()
+                                    },
+                                    onFilmClick = { filmId ->
+                                        navController.navigate("filmDetail/$filmId")
                                     }
                                 )
                             }

@@ -5,6 +5,7 @@ import androidx.compose.animation.expandVertically
 import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
@@ -35,6 +36,7 @@ import fr.isen.segfault.thedisneyapp.dataClasses.updateWantToGetRid
 @Composable
 fun ProfileScreen(
     onLogout: () -> Unit,
+    onFilmClick: (String) -> Unit,
     modifier: Modifier = Modifier
 ) {
     val auth = FirebaseAuth.getInstance()
@@ -345,6 +347,9 @@ fun ProfileScreen(
                         ownedFilms.forEach { film ->
                             OwnedFilmCard(
                                 film = film,
+                                onClick = {
+                                    onFilmClick(film.filmId)
+                                },
                                 onRemove = {
                                     removeOwnedFilm(
                                         filmId = film.filmId,
@@ -398,6 +403,7 @@ fun ProfileScreen(
 @Composable
 fun OwnedFilmCard(
     film: OwnedFilmUi,
+    onClick: () -> Unit,
     onRemove: () -> Unit,
     onToggleGetRid: () -> Unit
 ) {
@@ -405,6 +411,7 @@ fun OwnedFilmCard(
         modifier = Modifier
             .fillMaxWidth()
             .clip(RoundedCornerShape(14.dp))
+            .clickable { onClick() }
             .background(colorResource(R.color.surface))
             .border(
                 1.dp,
@@ -420,13 +427,14 @@ fun OwnedFilmCard(
             },
             fontSize = 15.sp,
             fontWeight = FontWeight.SemiBold,
-            color = colorResource(R.color.text),
-            modifier = Modifier.padding(8.dp)
+            color = colorResource(R.color.text)
         )
+
+        Spacer(modifier = Modifier.height(8.dp))
 
         Row(
             modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(12.dp)
+            horizontalArrangement = Arrangement.spacedBy(10.dp)
         ) {
             Button(
                 onClick = onToggleGetRid,
@@ -440,8 +448,9 @@ fun OwnedFilmCard(
                 )
             ) {
                 Text(
-                    text = if (film.wantToGetRid) "Marked to get rid" else "Mark to get rid",
-                    fontSize = 10.sp,
+                    text = if (film.wantToGetRid) "Get rid set" else "Get rid",
+                    fontSize = 11.sp,
+                    maxLines = 1,
                     color = colorResource(R.color.text)
                 )
             }
@@ -456,7 +465,8 @@ fun OwnedFilmCard(
             ) {
                 Text(
                     text = "Remove",
-                    fontSize = 10.sp,
+                    fontSize = 11.sp,
+                    maxLines = 1,
                     color = colorResource(R.color.red)
                 )
             }
