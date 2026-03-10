@@ -16,9 +16,11 @@ import androidx.compose.material.icons.outlined.Person
 import androidx.compose.material3.Scaffold
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
+import androidx.navigation.navArgument
 import com.google.firebase.auth.FirebaseAuth
 import fr.isen.segfault.thedisneyapp.dataClasses.fetchUniverses
 import fr.isen.segfault.thedisneyapp.screens.BottomAppBar
@@ -63,8 +65,67 @@ class MainActivity : ComponentActivity() {
                         modifier = Modifier.padding(innerPadding)
                     ) {
                         composable("Universes") {
-                            UniversesScreen(fetchUniverses = ::fetchUniverses)
+                            UniversesScreen(
+                                fetchUniverses = ::fetchUniverses,
+                                onUniverseClick = { universeId ->
+                                    navController.navigate("franchises/$universeId")
+                                }
+                            )
                         }
+                        composable(
+                            route = "franchises/{universeId}",
+                            arguments = listOf(
+                                navArgument("universeId") {
+                                    type = NavType.StringType
+                                }
+                            )
+                        ) { backStackEntry ->
+                            val universeId =
+                                backStackEntry.arguments?.getString("universeId").orEmpty()
+
+                            FranchisesScreen(
+                                universeId = universeId,
+                                fetchFranchises = ::fetchFranchises,
+                                onFranchiseClick = { franchiseId ->
+                                    navController.navigate("films/$universeId/$franchiseId")
+                                }
+                            )
+                        }
+                        composable(
+                            route = "films/{universeId}/{franchiseId}",
+                            arguments = listOf(
+                                navArgument("universeId") { type = NavType.StringType },
+                                navArgument("franchiseId") { type = NavType.StringType }
+                            )
+                        ) { backStackEntry ->
+                            val universeId = backStackEntry.arguments?.getString("universeId").orEmpty()
+                            val franchiseId = backStackEntry.arguments?.getString("franchiseId").orEmpty()
+
+                            FilmsScreen(
+                                universeId = universeId,
+                                franchiseId = franchiseId,
+                                fetchFilmsByFranchise = ::fetchFilmsByFranchise,
+                                onFilmClick = { filmId ->
+                                    navController.navigate("filmDetail/$filmId")
+                                }
+                            )
+                        }
+                        composable(
+                            route = "filmDetail/{filmId}",
+                            arguments = listOf(
+                                navArgument("filmId") {
+                                    type = NavType.StringType
+                                }
+                            )
+                        ) { backStackEntry ->
+                            val filmId = backStackEntry.arguments?.getString("filmId").orEmpty()
+
+                            FilmDetailScreen(
+                                filmId = filmId,
+                                fetchFilmById = ::fetchFilmById
+                            )
+                        }
+
                         composable("Profile") {
                             val context = LocalContext.current
                             val auth = FirebaseAuth.getInstance()

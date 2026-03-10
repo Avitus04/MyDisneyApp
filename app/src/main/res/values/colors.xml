@@ -28,4 +28,9 @@
     <color name="gold">#FFD700</color>
     <color name="green">#00FFB2</color>
     <color name="red">#FF3355</color>
+
+
+    <color name="status_green">#9BE39B</color>
+    <color name="status_red">#F2B0B0</color>
+    <color name="status_yellow">#E7D37A</color>
 </resources>
