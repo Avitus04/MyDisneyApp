@@ -158,7 +158,7 @@ fun UniverseCard(
                 modifier = Modifier
                     .size(58.dp)
                     .clip(RoundedCornerShape(16.dp))
-                    .background(colorResource(R.color.text).copy(alpha = 0.05f))
+                    .background(colorResource(R.color.text))
                     .border(
                         width = 1.dp,
                         color = colorResource(R.color.text).copy(alpha = 0.08f),
@@ -171,7 +171,7 @@ fun UniverseCard(
                     contentDescription = "${universe.name} logo",
                     modifier = Modifier
                         .fillMaxSize()
-                        .padding(5.dp),
+                        .padding(4.dp),
                     contentScale = ContentScale.Fit
                 )
             }
