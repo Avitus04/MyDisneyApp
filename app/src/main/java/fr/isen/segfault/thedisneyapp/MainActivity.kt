@@ -6,6 +6,7 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.activity.viewModels
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
@@ -16,6 +17,7 @@ import androidx.compose.material.icons.outlined.Home
 import androidx.compose.material.icons.outlined.Menu
 import androidx.compose.material.icons.outlined.Person
 import androidx.compose.material3.Scaffold
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.navigation.NavType
@@ -24,6 +26,7 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
 import com.google.firebase.auth.FirebaseAuth
+import fr.isen.segfault.thedisneyapp.components.FilmsViewModel
 import fr.isen.segfault.thedisneyapp.dataClasses.fetchFilmById
 import fr.isen.segfault.thedisneyapp.dataClasses.fetchFranchises
 import fr.isen.segfault.thedisneyapp.dataClasses.fetchUniverses
@@ -43,6 +46,8 @@ class MainActivity : ComponentActivity() {
         setContent {
             MyDisneyAppTheme {
                 val navController = rememberNavController()
+
+                val filmsViewModel: FilmsViewModel by viewModels()
 
                 val tabBarItems = listOf(
                     TabBarItem(
@@ -100,7 +105,8 @@ class MainActivity : ComponentActivity() {
 
                         composable("Films") {
                             FilmsScreen(
-                                onFilmClick = { filmId -> navController.navigate("filmDetail/$filmId") }
+                                onFilmClick = { navController.navigate("filmDetail/$it") },
+                                viewModel = filmsViewModel
                             )
                         }
 
@@ -111,10 +117,16 @@ class MainActivity : ComponentActivity() {
                                 navArgument("franchiseId") { type = NavType.StringType; nullable = true; defaultValue = null }
                             )
                         ) {
+                            val universeId = it.arguments?.getString("universeId")
+                            val franchiseId = it.arguments?.getString("franchiseId")
+
+                            LaunchedEffect(universeId, franchiseId) {
+                                filmsViewModel.applyNavFilters(universeId, franchiseId)
+                            }
+
                             FilmsScreen(
                                 onFilmClick = { filmId -> navController.navigate("filmDetail/$filmId") },
-                                universeIdFilter = it.arguments?.getString("universeId"),
-                                franchiseIdFilter = it.arguments?.getString("franchiseId")
+                                viewModel = filmsViewModel
                             )
                         }
                         composable(

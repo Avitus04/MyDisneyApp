@@ -61,6 +61,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil3.compose.AsyncImage
 import fr.isen.segfault.thedisneyapp.R
+import fr.isen.segfault.thedisneyapp.components.FilmsViewModel
 import fr.isen.segfault.thedisneyapp.dataClasses.Film
 import fr.isen.segfault.thedisneyapp.dataClasses.Franchise
 import fr.isen.segfault.thedisneyapp.dataClasses.TmdbMovieSearchResponse
@@ -83,6 +84,7 @@ enum class SortOption(val label: String) {
 @Composable
 fun FilmsScreen(
     onFilmClick: (String) -> Unit,
+    viewModel: FilmsViewModel,
     universeIdFilter: String? = null,
     franchiseIdFilter: String? = null
 ) {
@@ -90,13 +92,8 @@ fun FilmsScreen(
     var allUniverses by remember { mutableStateOf<List<Universe>>(emptyList()) }
     var allFranchises by remember { mutableStateOf<List<Franchise>>(emptyList()) }
 
-    var selectedUniverseId by remember { mutableStateOf(universeIdFilter) }
-    var selectedFranchiseId by remember { mutableStateOf(franchiseIdFilter) }
-    var selectedGenre by remember { mutableStateOf<String?>(null) }
-    var selectedSort by remember { mutableStateOf(SortOption.NAME_ASC) }
+
     var filmStatuses by remember { mutableStateOf<Map<String, UserFilmStatus>>(emptyMap()) }
-    var showOnlyWatched by remember { mutableStateOf(false) }
-    var showOnlyWantToWatch by remember { mutableStateOf(false) }
 
     var showFilterDropdown by remember { mutableStateOf(false) }
     var showSortDropdown by remember { mutableStateOf(false) }
@@ -112,8 +109,8 @@ fun FilmsScreen(
         fetchAllUserFilmStatuses { filmStatuses = it }
     }
 
-    LaunchedEffect(selectedUniverseId) {
-        selectedUniverseId?.let { uid ->
+    LaunchedEffect(viewModel.selectedUniverseId) {
+        viewModel.selectedUniverseId?.let { uid ->
             fetchFranchises(uid) { allFranchises = it }
         } ?: run { allFranchises = emptyList() }
     }
@@ -122,15 +119,15 @@ fun FilmsScreen(
 
     val filteredFilms = allFilms
         .filter { film ->
-            (selectedUniverseId == null || film.universeId == selectedUniverseId) &&
-                    (selectedFranchiseId == null || film.franchiseId == selectedFranchiseId) &&
-                    (selectedGenre == null || film.genre == selectedGenre) &&
-                    (searchQuery.isBlank() || film.title.contains(searchQuery, ignoreCase = true)) &&
-                    (!showOnlyWatched || filmStatuses[film.id]?.watched == true) &&
-                    (!showOnlyWantToWatch || filmStatuses[film.id]?.wantToWatch == true)
+            (viewModel.selectedUniverseId == null || film.universeId == viewModel.selectedUniverseId) &&
+                    (viewModel.selectedFranchiseId == null || film.franchiseId == viewModel.selectedFranchiseId) &&
+                    (viewModel.selectedGenre == null || film.genre == viewModel.selectedGenre) &&
+                    (!viewModel.showOnlyWatched || filmStatuses[film.id]?.watched == true) &&
+                    (!viewModel.showOnlyWantToWatch || filmStatuses[film.id]?.wantToWatch == true) &&
+                    (searchQuery.isBlank() || film.title.contains(searchQuery, ignoreCase = true))
         }
         .let { list ->
-            when (selectedSort) {
+            when (viewModel.selectedSort) {
                 SortOption.NAME_ASC  -> list.sortedBy { it.title }
                 SortOption.NAME_DESC -> list.sortedByDescending { it.title }
                 SortOption.DATE_ASC  -> list.sortedBy { it.releaseYear ?: Int.MAX_VALUE }
@@ -138,10 +135,10 @@ fun FilmsScreen(
             }
         }
 
-    val filterActive = selectedUniverseId != null || selectedFranchiseId != null ||
-            selectedGenre != null || showOnlyWatched || showOnlyWantToWatch
-    val selectedUniverseName = allUniverses.find { it.id == selectedUniverseId }?.name
-    val selectedFranchiseName = allFranchises.find { it.id == selectedFranchiseId }?.name
+    val filterActive = viewModel.selectedUniverseId != null || viewModel.selectedFranchiseId != null ||
+            viewModel.selectedGenre != null || viewModel.showOnlyWatched || viewModel.showOnlyWantToWatch
+    val selectedUniverseName = allUniverses.find { it.id == viewModel.selectedUniverseId }?.name
+    val selectedFranchiseName = allFranchises.find { it.id == viewModel.selectedFranchiseId }?.name
 
     Box(
         modifier = Modifier
@@ -254,7 +251,7 @@ fun FilmsScreen(
             ) {
                 // filter button + dropdown
                 Box {
-                    val filterActive = selectedUniverseId != null || selectedFranchiseId != null
+                    val filterActive = viewModel.selectedUniverseId != null || viewModel.selectedFranchiseId != null
                     OutlinedButton(
                         onClick = { showFilterDropdown = true },
                         shape = RoundedCornerShape(10.dp),
@@ -292,12 +289,12 @@ fun FilmsScreen(
                     ) {
                         DropdownMenuItem(
                             text = { Text("All films", color = colorResource(R.color.text_sub), fontSize = 13.sp) },
-                            onClick = { selectedUniverseId = null;
-                                selectedFranchiseId = null;
-                                selectedGenre = null;
+                            onClick = { viewModel.selectedUniverseId = null;
+                                viewModel.selectedFranchiseId = null;
+                                viewModel.selectedGenre = null;
                                 showFilterDropdown = false;
-                                showOnlyWatched = false;
-                                showOnlyWantToWatch = false },
+                                viewModel.showOnlyWatched = false;
+                                viewModel.showOnlyWantToWatch = false },
                             leadingIcon = { Icon(Icons.Filled.Close, contentDescription = null, tint = colorResource(R.color.text_sub), modifier = Modifier.size(16.dp)) }
                         )
 
@@ -307,7 +304,7 @@ fun FilmsScreen(
                         DropdownMenuItem(
                             text = {
                                 Text(
-                                    selectedGenre ?: "Genre",
+                                    viewModel.selectedGenre ?: "Genre",
                                     color = colorResource(R.color.text),
                                     fontSize = 13.sp,
                                     fontWeight = FontWeight.Medium
@@ -335,14 +332,14 @@ fun FilmsScreen(
                                     text = {
                                         Text(
                                             genre,
-                                            color = if (selectedGenre == genre) colorResource(R.color.accent)
+                                            color = if (viewModel.selectedGenre == genre) colorResource(R.color.accent)
                                             else colorResource(R.color.text_sub),
                                             fontSize = 12.sp,
                                             modifier = Modifier.padding(start = 12.dp)
                                         )
                                     },
                                     onClick = {
-                                        selectedGenre = genre
+                                        viewModel.selectedGenre = genre
                                         showGenrePicker = false
                                         showFilterDropdown = false
                                     }
@@ -369,17 +366,17 @@ fun FilmsScreen(
                                     text = {
                                         Text(
                                             universe.name,
-                                            color = if (selectedUniverseId == universe.id) colorResource(R.color.accent) else colorResource(R.color.text_sub),
+                                            color = if (viewModel.selectedUniverseId == universe.id) colorResource(R.color.accent) else colorResource(R.color.text_sub),
                                             fontSize = 12.sp,
                                             modifier = Modifier.padding(start = 12.dp)
                                         )
                                     },
-                                    onClick = { selectedUniverseId = universe.id; selectedFranchiseId = null; showUniversePicker = false }
+                                    onClick = { viewModel.selectedUniverseId = universe.id; viewModel.selectedFranchiseId = null; showUniversePicker = false }
                                 )
                             }
                         }
 
-                        if (selectedUniverseId != null) {
+                        if (viewModel.selectedUniverseId != null) {
                             HorizontalDivider(color = colorResource(R.color.card_border))
 
                             DropdownMenuItem(
@@ -399,12 +396,12 @@ fun FilmsScreen(
                                         text = {
                                             Text(
                                                 franchise.name,
-                                                color = if (selectedFranchiseId == franchise.id) colorResource(R.color.accent) else colorResource(R.color.text_sub),
+                                                color = if (viewModel.selectedFranchiseId == franchise.id) colorResource(R.color.accent) else colorResource(R.color.text_sub),
                                                 fontSize = 12.sp,
                                                 modifier = Modifier.padding(start = 12.dp)
                                             )
                                         },
-                                        onClick = { selectedFranchiseId = franchise.id; showFranchisePicker = false; showFilterDropdown = false }
+                                        onClick = { viewModel.selectedFranchiseId = franchise.id; showFranchisePicker = false; showFilterDropdown = false }
                                     )
                                 }
                             }
@@ -417,18 +414,18 @@ fun FilmsScreen(
                             text = {
                                 Text(
                                     "Watched",
-                                    color = if (showOnlyWatched) colorResource(R.color.accent)
+                                    color = if (viewModel.showOnlyWatched) colorResource(R.color.accent)
                                     else colorResource(R.color.text),
                                     fontSize = 13.sp,
                                     fontWeight = FontWeight.Medium
                                 )
                             },
                             onClick = {
-                                showOnlyWatched = !showOnlyWatched
-                                if (showOnlyWatched) showOnlyWantToWatch = false // mutuellement exclusifs
+                                viewModel.showOnlyWatched = !viewModel.showOnlyWatched
+                                if (viewModel.showOnlyWatched) viewModel.showOnlyWantToWatch = false // mutuellement exclusifs
                             },
                             trailingIcon = {
-                                if (showOnlyWatched) {
+                                if (viewModel.showOnlyWatched) {
                                     Icon(
                                         Icons.Filled.Check,
                                         contentDescription = null,
@@ -444,18 +441,18 @@ fun FilmsScreen(
                             text = {
                                 Text(
                                     "Want to watch",
-                                    color = if (showOnlyWantToWatch) colorResource(R.color.accent)
+                                    color = if (viewModel.showOnlyWantToWatch) colorResource(R.color.accent)
                                     else colorResource(R.color.text),
                                     fontSize = 13.sp,
                                     fontWeight = FontWeight.Medium
                                 )
                             },
                             onClick = {
-                                showOnlyWantToWatch = !showOnlyWantToWatch
-                                if (showOnlyWantToWatch) showOnlyWatched = false // mutuellement exclusifs
+                                viewModel.showOnlyWantToWatch = !viewModel.showOnlyWantToWatch
+                                if (viewModel.showOnlyWantToWatch) viewModel.showOnlyWatched = false // mutuellement exclusifs
                             },
                             trailingIcon = {
-                                if (showOnlyWantToWatch) {
+                                if (viewModel.showOnlyWantToWatch) {
                                     Icon(
                                         Icons.Filled.Check,
                                         contentDescription = null,
@@ -484,7 +481,7 @@ fun FilmsScreen(
                             modifier = Modifier.size(16.dp)
                         )
                         Text(
-                            text = selectedSort.label,
+                            text = viewModel.selectedSort.label,
                             color = colorResource(R.color.text_sub),
                             fontSize = 13.sp,
                             fontWeight = FontWeight.Medium,
@@ -502,14 +499,14 @@ fun FilmsScreen(
                                 text = {
                                     Text(
                                         option.label,
-                                        color = if (selectedSort == option) colorResource(R.color.accent) else colorResource(R.color.text),
+                                        color = if (viewModel.selectedSort == option) colorResource(R.color.accent) else colorResource(R.color.text),
                                         fontSize = 13.sp,
-                                        fontWeight = if (selectedSort == option) FontWeight.SemiBold else FontWeight.Normal
+                                        fontWeight = if (viewModel.selectedSort == option) FontWeight.SemiBold else FontWeight.Normal
                                     )
                                 },
-                                onClick = { selectedSort = option; showSortDropdown = false },
+                                onClick = { viewModel.selectedSort = option; showSortDropdown = false },
                                 trailingIcon = {
-                                    if (selectedSort == option) {
+                                    if (viewModel.selectedSort == option) {
                                         Icon(Icons.Filled.Check, contentDescription = null, tint = colorResource(R.color.accent), modifier = Modifier.size(14.dp))
                                     }
                                 }
