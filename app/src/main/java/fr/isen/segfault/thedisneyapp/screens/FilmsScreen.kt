@@ -65,6 +65,8 @@ import fr.isen.segfault.thedisneyapp.dataClasses.Film
 import fr.isen.segfault.thedisneyapp.dataClasses.Franchise
 import fr.isen.segfault.thedisneyapp.dataClasses.TmdbMovieSearchResponse
 import fr.isen.segfault.thedisneyapp.dataClasses.Universe
+import fr.isen.segfault.thedisneyapp.dataClasses.UserFilmStatus
+import fr.isen.segfault.thedisneyapp.dataClasses.fetchAllUserFilmStatuses
 import fr.isen.segfault.thedisneyapp.dataClasses.fetchFilms
 import fr.isen.segfault.thedisneyapp.dataClasses.fetchFranchises
 import fr.isen.segfault.thedisneyapp.dataClasses.fetchUniverses
@@ -92,6 +94,9 @@ fun FilmsScreen(
     var selectedFranchiseId by remember { mutableStateOf(franchiseIdFilter) }
     var selectedGenre by remember { mutableStateOf<String?>(null) }
     var selectedSort by remember { mutableStateOf(SortOption.NAME_ASC) }
+    var filmStatuses by remember { mutableStateOf<Map<String, UserFilmStatus>>(emptyMap()) }
+    var showOnlyWatched by remember { mutableStateOf(false) }
+    var showOnlyWantToWatch by remember { mutableStateOf(false) }
 
     var showFilterDropdown by remember { mutableStateOf(false) }
     var showSortDropdown by remember { mutableStateOf(false) }
@@ -104,6 +109,7 @@ fun FilmsScreen(
     LaunchedEffect(Unit) {
         fetchFilms { allFilms = it }
         fetchUniverses { allUniverses = it }
+        fetchAllUserFilmStatuses { filmStatuses = it }
     }
 
     LaunchedEffect(selectedUniverseId) {
@@ -119,7 +125,9 @@ fun FilmsScreen(
             (selectedUniverseId == null || film.universeId == selectedUniverseId) &&
                     (selectedFranchiseId == null || film.franchiseId == selectedFranchiseId) &&
                     (selectedGenre == null || film.genre == selectedGenre) &&
-                    (searchQuery.isBlank() || film.title.contains(searchQuery, ignoreCase = true))
+                    (searchQuery.isBlank() || film.title.contains(searchQuery, ignoreCase = true)) &&
+                    (!showOnlyWatched || filmStatuses[film.id]?.watched == true) &&
+                    (!showOnlyWantToWatch || filmStatuses[film.id]?.wantToWatch == true)
         }
         .let { list ->
             when (selectedSort) {
@@ -130,7 +138,8 @@ fun FilmsScreen(
             }
         }
 
-    val filterActive = selectedUniverseId != null || selectedFranchiseId != null || selectedGenre != null
+    val filterActive = selectedUniverseId != null || selectedFranchiseId != null ||
+            selectedGenre != null || showOnlyWatched || showOnlyWantToWatch
     val selectedUniverseName = allUniverses.find { it.id == selectedUniverseId }?.name
     val selectedFranchiseName = allFranchises.find { it.id == selectedFranchiseId }?.name
 
@@ -283,7 +292,12 @@ fun FilmsScreen(
                     ) {
                         DropdownMenuItem(
                             text = { Text("All films", color = colorResource(R.color.text_sub), fontSize = 13.sp) },
-                            onClick = { selectedUniverseId = null; selectedFranchiseId = null; selectedGenre = null; showFilterDropdown = false },
+                            onClick = { selectedUniverseId = null;
+                                selectedFranchiseId = null;
+                                selectedGenre = null;
+                                showFilterDropdown = false;
+                                showOnlyWatched = false;
+                                showOnlyWantToWatch = false },
                             leadingIcon = { Icon(Icons.Filled.Close, contentDescription = null, tint = colorResource(R.color.text_sub), modifier = Modifier.size(16.dp)) }
                         )
 
@@ -395,6 +409,62 @@ fun FilmsScreen(
                                 }
                             }
                         }
+
+                        HorizontalDivider(color = colorResource(R.color.card_border))
+
+                        // watched films filter
+                        DropdownMenuItem(
+                            text = {
+                                Text(
+                                    "Watched",
+                                    color = if (showOnlyWatched) colorResource(R.color.accent)
+                                    else colorResource(R.color.text),
+                                    fontSize = 13.sp,
+                                    fontWeight = FontWeight.Medium
+                                )
+                            },
+                            onClick = {
+                                showOnlyWatched = !showOnlyWatched
+                                if (showOnlyWatched) showOnlyWantToWatch = false // mutuellement exclusifs
+                            },
+                            trailingIcon = {
+                                if (showOnlyWatched) {
+                                    Icon(
+                                        Icons.Filled.Check,
+                                        contentDescription = null,
+                                        tint = colorResource(R.color.accent),
+                                        modifier = Modifier.size(16.dp)
+                                    )
+                                }
+                            }
+                        )
+
+                        // want to watch filter
+                        DropdownMenuItem(
+                            text = {
+                                Text(
+                                    "Want to watch",
+                                    color = if (showOnlyWantToWatch) colorResource(R.color.accent)
+                                    else colorResource(R.color.text),
+                                    fontSize = 13.sp,
+                                    fontWeight = FontWeight.Medium
+                                )
+                            },
+                            onClick = {
+                                showOnlyWantToWatch = !showOnlyWantToWatch
+                                if (showOnlyWantToWatch) showOnlyWatched = false // mutuellement exclusifs
+                            },
+                            trailingIcon = {
+                                if (showOnlyWantToWatch) {
+                                    Icon(
+                                        Icons.Filled.Check,
+                                        contentDescription = null,
+                                        tint = colorResource(R.color.accent),
+                                        modifier = Modifier.size(16.dp)
+                                    )
+                                }
+                            }
+                        )
                     }
                 }
 

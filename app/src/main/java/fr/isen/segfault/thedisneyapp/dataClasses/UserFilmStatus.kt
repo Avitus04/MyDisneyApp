@@ -88,6 +88,38 @@ fun fetchCurrentUserFilmStatus(
     })
 }
 
+
+fun fetchAllUserFilmStatuses(callback: (Map<String, UserFilmStatus>) -> Unit) {
+    val user = FirebaseAuth.getInstance().currentUser
+    if (user == null) {
+        callback(emptyMap())
+        return
+    }
+
+    val database = Firebase.database
+    val ref = database
+        .getReference("users")
+        .child(user.uid)
+        .child("filmStatus")
+
+    ref.addListenerForSingleValueEvent(object : ValueEventListener {
+        override fun onDataChange(snapshot: DataSnapshot) {
+            val statuses = mutableMapOf<String, UserFilmStatus>()
+            for (child in snapshot.children) {
+                val status = child.getValue(UserFilmStatus::class.java)
+                if (status != null) {
+                    statuses[child.key ?: continue] = status
+                }
+            }
+            callback(statuses)
+        }
+
+        override fun onCancelled(error: DatabaseError) {
+            callback(emptyMap())
+        }
+    })
+}
+
 fun fetchOwnedFilms(
     callback: (List<OwnedFilmUi>) -> Unit
 ) {

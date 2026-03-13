@@ -7,7 +7,6 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -17,8 +16,13 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
+import androidx.compose.material.icons.filled.Check
+import androidx.compose.material.icons.filled.Close
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -58,17 +62,14 @@ fun FilmDetailScreen(
     var wantToGetRid by remember { mutableStateOf(false) }
     var posterUrl by remember { mutableStateOf<String?>(null) }
 
-
     LaunchedEffect(filmId) {
         fetchFilmById(filmId) { loadedFilm ->
             film = loadedFilm
-
             loadedFilm?.let { current ->
                 val call = TmdbApiClient.retrofit.searchMovie(
                     title = current.title,
                     year = current.releaseYear
                 )
-
                 call.enqueue(object : retrofit2.Callback<TmdbMovieSearchResponse> {
                     override fun onResponse(
                         call: retrofit2.Call<TmdbMovieSearchResponse>,
@@ -77,20 +78,13 @@ fun FilmDetailScreen(
                         val movie = response.body()?.results?.firstOrNull()
                         posterUrl = getPosterUrl(movie?.poster_path)
                     }
-
-                    override fun onFailure(
-                        call: retrofit2.Call<TmdbMovieSearchResponse>,
-                        t: Throwable
-                    ) {
+                    override fun onFailure(call: retrofit2.Call<TmdbMovieSearchResponse>, t: Throwable) {
                         posterUrl = null
                     }
                 })
             }
         }
-
-        fetchUsersWhoOwnAndWantToGetRid(filmId) {
-            availableUsers = it
-        }
+        fetchUsersWhoOwnAndWantToGetRid(filmId) { availableUsers = it }
         fetchCurrentUserFilmStatus(filmId) { status ->
             if (status != null) {
                 watched = status.watched
@@ -99,7 +93,6 @@ fun FilmDetailScreen(
                 wantToGetRid = status.wantToGetRid
             }
         }
-
     }
 
     val currentFilm = film
@@ -127,16 +120,13 @@ fun FilmDetailScreen(
             fontWeight = FontWeight.ExtraBold
         )
 
-        Spacer(modifier = Modifier.height(20.dp))
-
         Card(
             modifier = Modifier
                 .fillMaxWidth()
+                .padding(top = 20.dp)
                 .verticalScroll(rememberScrollState()),
             shape = RoundedCornerShape(24.dp),
-            colors = CardDefaults.cardColors(
-                containerColor = colorResource(R.color.card)
-            ),
+            colors = CardDefaults.cardColors(containerColor = colorResource(R.color.card)),
             elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
         ) {
             Column(
@@ -144,20 +134,13 @@ fun FilmDetailScreen(
                     .fillMaxSize()
                     .padding(18.dp)
             ) {
-                Row(
-                    modifier = Modifier.fillMaxWidth()
-                ) {
+                Row(modifier = Modifier.fillMaxWidth()) {
                     Box(
                         modifier = Modifier
                             .width(130.dp)
                             .height(190.dp)
-                            .border(
-                                width = 1.dp,
-                                color = colorResource(R.color.text).copy(alpha = 0.25f),
-                            )
-                            .background(
-                                color = colorResource(R.color.text).copy(alpha = 0.08f),
-                            ),
+                            .border(1.dp, colorResource(R.color.text).copy(alpha = 0.25f))
+                            .background(colorResource(R.color.text).copy(alpha = 0.08f)),
                         contentAlignment = Alignment.Center
                     ) {
                         if (posterUrl != null) {
@@ -177,12 +160,10 @@ fun FilmDetailScreen(
                         }
                     }
 
-                    Spacer(modifier = Modifier.width(20.dp))
-
                     Column(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .padding(top = 4.dp),
+                            .padding(start = 20.dp, top = 4.dp),
                         verticalArrangement = Arrangement.spacedBy(14.dp)
                     ) {
                         Text(
@@ -192,25 +173,15 @@ fun FilmDetailScreen(
                             fontWeight = FontWeight.Bold,
                             maxLines = 3
                         )
-
-                        DetailInfoLine(
-                            label = "Year",
-                            value = currentFilm?.releaseYear?.toString() ?: "-"
-                        )
-
-                        DetailInfoLine(
-                            label = "Genre",
-                            value = currentFilm?.genre ?: "-"
-                        )
-
-                        Spacer(modifier = Modifier.height(6.dp))
+                        DetailInfoLine(label = "Year", value = currentFilm?.releaseYear?.toString() ?: "-")
+                        DetailInfoLine(label = "Genre", value = currentFilm?.genre ?: "-")
                     }
                 }
 
-                Spacer(modifier = Modifier.height(28.dp))
-
                 Column(
-                    modifier = Modifier.fillMaxWidth(),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(top = 28.dp),
                     verticalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
                     Row(
@@ -222,21 +193,14 @@ fun FilmDetailScreen(
                             text = "Watched",
                             color = colorResource(R.color.status_green),
                             isActive = watched,
-                            onClick = {
-                                watched = !watched
-                                persistStatus()
-                            },
+                            onClick = { watched = !watched; persistStatus() },
                             modifier = Modifier.weight(1f)
                         )
-
                         StatusButtonWithText(
                             text = "Want to watch",
                             color = colorResource(R.color.status_blue),
                             isActive = wantToWatch,
-                            onClick = {
-                                wantToWatch = !wantToWatch
-                                persistStatus()
-                            },
+                            onClick = { wantToWatch = !wantToWatch; persistStatus() },
                             modifier = Modifier.weight(1f)
                         )
                     }
@@ -252,81 +216,66 @@ fun FilmDetailScreen(
                             isActive = ownDvdBluray,
                             onClick = {
                                 ownDvdBluray = !ownDvdBluray
-
-                                if (!ownDvdBluray) {
-                                    wantToGetRid = false
-                                }
-
+                                if (!ownDvdBluray) wantToGetRid = false
                                 persistStatus()
                             },
                             modifier = Modifier.weight(1f)
                         )
-
                         if (ownDvdBluray) {
                             StatusButtonWithText(
                                 text = "Get rid",
                                 color = colorResource(R.color.status_yellow),
                                 isActive = wantToGetRid,
-                                onClick = {
-                                    wantToGetRid = !wantToGetRid
-                                    persistStatus()
-                                },
+                                onClick = { wantToGetRid = !wantToGetRid; persistStatus() },
                                 modifier = Modifier.weight(1f)
                             )
                         } else {
-                            Spacer(modifier = Modifier.weight(1f))
+                            Box(modifier = Modifier.weight(1f))
                         }
                     }
                 }
 
-                Spacer(modifier = Modifier.height(28.dp))
-
-                Column {
+                Column(modifier = Modifier.padding(top = 28.dp)) {
                     Text(
                         text = "Universe",
                         color = colorResource(R.color.text).copy(alpha = 0.65f),
                         fontSize = 13.sp,
                         fontWeight = FontWeight.Medium
                     )
-
-                    Spacer(modifier = Modifier.height(6.dp))
-
                     DetailTagButton(
-                        text = currentFilm?.universeId ?: "Universe"
+                        text = currentFilm?.universeId ?: "Universe",
+                        modifier = Modifier.padding(top = 6.dp)
                     )
                 }
 
-                Spacer(modifier = Modifier.height(14.dp))
-
-                Column {
+                Column(modifier = Modifier.padding(top = 14.dp)) {
                     Text(
                         text = "Saga",
                         color = colorResource(R.color.text).copy(alpha = 0.65f),
                         fontSize = 13.sp,
                         fontWeight = FontWeight.Medium
                     )
-
-                    Spacer(modifier = Modifier.height(6.dp))
-
                     DetailTagButton(
-                        text = currentFilm?.franchiseId ?: "Saga"
+                        text = currentFilm?.franchiseId ?: "Saga",
+                        modifier = Modifier.padding(top = 6.dp)
                     )
+                }
 
-                    Spacer(modifier = Modifier.height(18.dp))
-
+                Column(modifier = Modifier.padding(top = 18.dp, bottom = 4.dp)) {
                     Text(
                         text = "Available from users",
                         color = colorResource(R.color.text).copy(alpha = 0.65f),
                         fontSize = 13.sp,
                         fontWeight = FontWeight.Medium
                     )
-
-                    Spacer(modifier = Modifier.height(8.dp))
-
                     if (availableUsers.isEmpty()) {
-                        DetailTagButton(text = "No user currently offers this film")
+                        DetailTagButton(
+                            text = "No user currently offers this film",
+                            modifier = Modifier.padding(top = 8.dp)
+                        )
                     } else {
                         Column(
+                            modifier = Modifier.padding(top = 8.dp),
                             verticalArrangement = Arrangement.spacedBy(10.dp)
                         ) {
                             availableUsers.forEach { user ->
@@ -341,10 +290,7 @@ fun FilmDetailScreen(
 }
 
 @Composable
-fun DetailInfoLine(
-    label: String,
-    value: String
-) {
+fun DetailInfoLine(label: String, value: String) {
     Column {
         Text(
             text = label,
@@ -352,24 +298,20 @@ fun DetailInfoLine(
             fontSize = 13.sp,
             fontWeight = FontWeight.Medium
         )
-
-        Spacer(modifier = Modifier.height(4.dp))
-
         Text(
             text = value,
             color = colorResource(R.color.text),
             fontSize = 17.sp,
-            fontWeight = FontWeight.SemiBold
+            fontWeight = FontWeight.SemiBold,
+            modifier = Modifier.padding(top = 4.dp)
         )
     }
 }
 
 @Composable
-fun DetailTagButton(
-    text: String
-) {
+fun DetailTagButton(text: String, modifier: Modifier = Modifier) {
     Card(
-        modifier = Modifier.fillMaxWidth(),
+        modifier = modifier.fillMaxWidth(),
         shape = RoundedCornerShape(14.dp),
         colors = CardDefaults.cardColors(
             containerColor = colorResource(R.color.text).copy(alpha = 0.06f)
@@ -412,12 +354,21 @@ fun StatusButtonWithText(
                     shape = RoundedCornerShape(6.dp)
                 )
         )
-
-        Spacer(modifier = Modifier.width(10.dp))
+        {
+            if(isActive) {
+                Icon(
+                    imageVector = Icons.Filled.Check,
+                    contentDescription = "Checked",
+                    tint = colorResource(R.color.card_border).copy(alpha = 0.6f),
+                )
+            }
+        }
 
         Text(
             text = text,
-            modifier = Modifier.weight(1f),
+            modifier = Modifier
+                .weight(1f)
+                .padding(start = 10.dp),
             color = colorResource(R.color.text),
             fontSize = 13.sp,
             fontWeight = FontWeight.Medium,
@@ -435,26 +386,20 @@ fun UserOwnerCard(user: UserOwnerUi) {
             containerColor = colorResource(R.color.text).copy(alpha = 0.06f)
         )
     ) {
-        Column(
-            modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp)
-        ) {
+        Column(modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp)) {
             Text(
-                text = if (user.displayName.isNotBlank()) user.displayName else user.email,
+                text = user.displayName.ifBlank { user.email },
                 color = colorResource(R.color.text),
                 fontSize = 16.sp,
                 fontWeight = FontWeight.SemiBold
             )
-
-            Spacer(modifier = Modifier.height(4.dp))
-
             Text(
-                text = "Owns it • Wants to get rid of it",
+                text = "Owns it & Wants to get rid of it",
                 color = colorResource(R.color.text).copy(alpha = 0.72f),
                 fontSize = 13.sp,
-                fontWeight = FontWeight.Medium
+                fontWeight = FontWeight.Medium,
+                modifier = Modifier.padding(top = 4.dp)
             )
         }
     }
 }
-
-
