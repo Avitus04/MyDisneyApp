@@ -3,6 +3,7 @@ package fr.isen.segfault.thedisneyapp
 import android.app.Activity
 import android.content.Intent
 import android.os.Bundle
+import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
@@ -25,7 +26,9 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
+import com.google.firebase.Firebase
 import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.database.database
 import fr.isen.segfault.thedisneyapp.components.FilmsViewModel
 import fr.isen.segfault.thedisneyapp.dataClasses.fetchFilmById
 import fr.isen.segfault.thedisneyapp.dataClasses.fetchFranchises
@@ -46,6 +49,7 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         initRemoteConfig()
+        showUnreadMessagesCount()
         setContent {
             MyDisneyAppTheme {
                 val navController = rememberNavController()
@@ -184,5 +188,26 @@ class MainActivity : ComponentActivity() {
                 }
             }
         }
+    }
+    private fun showUnreadMessagesCount() {
+        val uid = FirebaseAuth.getInstance().currentUser?.uid ?: return
+
+        Firebase.database.reference
+            .child("messages").child(uid)
+            .addListenerForSingleValueEvent(object : com.google.firebase.database.ValueEventListener {
+                override fun onDataChange(snapshot: com.google.firebase.database.DataSnapshot) {
+                    val unread = snapshot.children.count { child ->
+                        child.child("read").getValue(Boolean::class.java) == false
+                    }
+                    if (unread > 0) {
+                        Toast.makeText(
+                            this@MainActivity,
+                            "📬 You have $unread unread message${if (unread > 1) "s" else ""}",
+                            Toast.LENGTH_LONG
+                        ).show()
+                    }
+                }
+                override fun onCancelled(error: com.google.firebase.database.DatabaseError) {}
+            })
     }
 }

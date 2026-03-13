@@ -12,6 +12,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Email
 import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material3.*
@@ -22,6 +23,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.res.colorResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.google.firebase.auth.FirebaseAuth
@@ -32,6 +34,7 @@ import fr.isen.segfault.thedisneyapp.dataClasses.OwnedFilmUi
 import fr.isen.segfault.thedisneyapp.dataClasses.fetchOwnedFilms
 import fr.isen.segfault.thedisneyapp.dataClasses.removeOwnedFilm
 import fr.isen.segfault.thedisneyapp.dataClasses.updateWantToGetRid
+import fr.isen.segfault.thedisneyapp.utils.fetchMessages
 
 @Composable
 fun ProfileScreen(
@@ -49,6 +52,9 @@ fun ProfileScreen(
 
     // fetch username from DB with LaunchedEffect
     var username by remember { mutableStateOf(user?.displayName ?: "") }
+
+    var unreadCount by remember { mutableStateOf(0) }
+
     LaunchedEffect(user?.uid) {
         user?.uid?.let { uid ->
             FirebaseDatabase.getInstance().reference
@@ -61,6 +67,9 @@ fun ProfileScreen(
                 }
             fetchOwnedFilms {
                 ownedFilms = it
+            }
+            fetchMessages { messages ->
+                unreadCount = messages.count { !it.read }
             }
         }
     }
@@ -100,14 +109,51 @@ fun ProfileScreen(
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
             // page title
-            Text(
-                text = "MY PROFILE",
-                fontSize = 13.sp,
-                fontWeight = FontWeight.Bold,
-                color = colorResource(R.color.accent),
-                letterSpacing = 4.sp,
-                modifier = Modifier.padding(top = 56.dp)
-            )
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(top = 56.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                // empty box to balance the icon on the right
+                Box(modifier = Modifier.size(48.dp))
+
+                Text(
+                    text = "MY PROFILE",
+                    fontSize = 13.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = colorResource(R.color.accent),
+                    letterSpacing = 4.sp,
+                    modifier = Modifier.weight(1f),
+                    textAlign = TextAlign.Center
+                )
+
+                BadgedBox(
+                    badge = {
+                        if (unreadCount > 0) {
+                            Badge(
+                                containerColor = colorResource(R.color.red)
+                            ) {
+                                Text(
+                                    text = if (unreadCount > 9) "9+" else unreadCount.toString(),
+                                    fontSize = 10.sp,
+                                    color = colorResource(R.color.text)
+                                )
+                            }
+                        }
+                    }
+                ) {
+                    IconButton(onClick = onNavigateToMessages) {
+                        Icon(
+                            imageVector = Icons.Filled.Email,
+                            contentDescription = "Messages",
+                            tint = colorResource(R.color.accent),
+                            modifier = Modifier.size(22.dp)
+                        )
+                    }
+                }
+            }
+
 
             // avatar with glowing border
             Box(
@@ -397,27 +443,6 @@ fun ProfileScreen(
                         }
                     }
                 }
-            }
-
-           // messages button
-            Button(
-                onClick = { onNavigateToMessages()},
-                modifier = Modifier
-                    .padding(top = 20.dp)
-                    .fillMaxWidth()
-                    .height(52.dp)
-                    .border(1.dp, colorResource(R.color.accent).copy(alpha = 0.6f), RoundedCornerShape(12.dp)),
-                shape = RoundedCornerShape(12.dp),
-                colors = ButtonDefaults.buttonColors(
-                    containerColor = colorResource(R.color.accent_dim)
-                )
-            ) {
-                Text(
-                    "Messages",
-                    fontWeight = FontWeight.Bold,
-                    fontSize = 15.sp,
-                    color = colorResource(R.color.accent)
-                )
             }
 
             // logout button

@@ -51,10 +51,6 @@ fun MessagesScreen(
         fetchMessages { messages = it }
     }
 
-    //////////////////////////////////////////////////////////////////////////////////////
-    Log.d("RemoteConfig", "final message: '$messages[0].filmTitle'")
-    /////////////////////////////////////////////////////////////////////////////////////
-
     Box(
         modifier = Modifier
             .fillMaxSize()
@@ -185,7 +181,6 @@ fun MessageCard(
                 fontSize = 13.sp,
                 color = colorResource(R.color.text_sub),
                 modifier = Modifier.padding(top = 8.dp),
-                maxLines = 3,
                 overflow = TextOverflow.Ellipsis
             )
         }

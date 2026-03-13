@@ -33,12 +33,6 @@ fun sendContactMessage(
 
     val remoteConfig = Firebase.remoteConfig
 
-    remoteConfig.fetchAndActivate().addOnCompleteListener { task ->
-        Log.d("RemoteConfig", "fetch success: ${task.isSuccessful}")
-
-        val template = remoteConfig.getString("contact_message")
-        Log.d("RemoteConfig", "template: '$template'")
-    }
     // fetch latest config then send
     remoteConfig.fetchAndActivate().addOnCompleteListener { task ->
         val template = remoteConfig.getString("contact_message")
