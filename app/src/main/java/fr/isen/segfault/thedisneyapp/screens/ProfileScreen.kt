@@ -50,7 +50,7 @@ fun ProfileScreen(
 
     var ownedFilms by remember { mutableStateOf<List<OwnedFilmUi>>(emptyList()) }
 
-    // fetch username from DB with LaunchedEffect
+    // fetch username
     var username by remember { mutableStateOf(user?.displayName ?: "") }
 
     var unreadCount by remember { mutableStateOf(0) }

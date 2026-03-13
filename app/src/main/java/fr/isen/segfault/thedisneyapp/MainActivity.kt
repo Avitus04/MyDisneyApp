@@ -95,7 +95,7 @@ class MainActivity : ComponentActivity() {
                                 }
                             )
                         }
-                        // Dans MainActivity, remplacer la route franchises
+
                         composable(
                             route = "franchises/{universeId}",
                             arguments = listOf(navArgument("universeId") { type = NavType.StringType })

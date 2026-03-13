@@ -300,7 +300,7 @@ fun FilmsScreen(
 
                         HorizontalDivider(color = colorResource(R.color.card_border))
 
-// genre picker
+                        // genre picker
                         DropdownMenuItem(
                             text = {
                                 Text(
