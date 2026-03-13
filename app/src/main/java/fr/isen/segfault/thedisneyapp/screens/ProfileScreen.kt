@@ -42,6 +42,8 @@ fun ProfileScreen(
     val auth = FirebaseAuth.getInstance()
     val user = auth.currentUser
 
+    var currentPassword by remember { mutableStateOf("") }
+
     var ownedFilms by remember { mutableStateOf<List<OwnedFilmUi>>(emptyList()) }
 
     // fetch username from DB with LaunchedEffect
@@ -197,6 +199,7 @@ fun ProfileScreen(
                             showPasswordFields = !showPasswordFields
                             errorMessage = null
                             successMessage = null
+                            currentPassword = ""
                             newPassword = ""
                             confirmPassword = ""
                         },
@@ -225,11 +228,20 @@ fun ProfileScreen(
                         )
 
                         Text(
-                            "New password",
+                            "Current password",
                             fontSize = 12.sp,
                             fontWeight = FontWeight.Medium,
                             color = colorResource(R.color.text_sub),
                             modifier = Modifier.padding(top = 20.dp, start = 4.dp, bottom = 6.dp)
+                        )
+                        PasswordField(value = currentPassword, onValueChange = { currentPassword = it })
+
+                        Text(
+                            "New password",
+                            fontSize = 12.sp,
+                            fontWeight = FontWeight.Medium,
+                            color = colorResource(R.color.text_sub),
+                            modifier = Modifier.padding(top = 16.dp, start = 4.dp, bottom = 6.dp)
                         )
                         PasswordField(value = newPassword, onValueChange = { newPassword = it })
 
@@ -252,47 +264,60 @@ fun ProfileScreen(
                             )
                         }
 
-                        // error message
                         errorMessage?.let {
                             Text(
-                                text = "$it",
+                                text = it,
                                 color = colorResource(R.color.red),
                                 fontSize = 12.sp,
                                 modifier = Modifier.padding(top = 8.dp, start = 4.dp)
                             )
                         }
 
-                        // success message
                         successMessage?.let {
                             Text(
-                                text = "$it",
+                                text = it,
                                 color = colorResource(R.color.green),
                                 fontSize = 12.sp,
                                 modifier = Modifier.padding(top = 8.dp, start = 4.dp)
                             )
                         }
 
-                        // update password button
                         Button(
                             onClick = {
                                 when {
+                                    currentPassword.isBlank() ->
+                                        errorMessage = "Please enter your current password"
                                     newPassword.isBlank() ->
+                                        errorMessage = "Please fill every field"
+                                    confirmPassword.isBlank() ->
                                         errorMessage = "Please fill every field"
                                     newPassword != confirmPassword ->
                                         errorMessage = "Passwords do not match"
                                     newPassword.length < 8 ->
                                         errorMessage = "Password must be at least 8 characters"
                                     else -> {
-                                        user?.updatePassword(newPassword)
-                                            ?.addOnSuccessListener {
-                                                successMessage = "Password updated!"
-                                                errorMessage = null
-                                                newPassword = ""
-                                                confirmPassword = ""
-                                                showPasswordFields = false
+                                        // re-authenticate before updating password
+                                        val email = user?.email ?: return@Button
+                                        val credential = com.google.firebase.auth.EmailAuthProvider
+                                            .getCredential(email, currentPassword)
+
+                                        user.reauthenticate(credential)
+                                            .addOnSuccessListener {
+                                                user.updatePassword(newPassword)
+                                                    .addOnSuccessListener {
+                                                        successMessage = "Password updated!"
+                                                        errorMessage = null
+                                                        currentPassword = ""
+                                                        newPassword = ""
+                                                        confirmPassword = ""
+                                                        showPasswordFields = false
+                                                    }
+                                                    .addOnFailureListener {
+                                                        errorMessage = it.message
+                                                    }
                                             }
-                                            ?.addOnFailureListener {
-                                                errorMessage = it.message
+                                            .addOnFailureListener {
+                                                errorMessage = "Current password is incorrect"
                                             }
                                     }
                                 }
@@ -427,10 +452,9 @@ fun OwnedFilmCard(
             },
             fontSize = 15.sp,
             fontWeight = FontWeight.SemiBold,
-            color = colorResource(R.color.text)
+            color = colorResource(R.color.text),
+            modifier = Modifier.padding(bottom = 8.dp)
         )
-
-        Spacer(modifier = Modifier.height(8.dp))
 
         Row(
             modifier = Modifier.fillMaxWidth(),
