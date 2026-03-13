@@ -17,9 +17,7 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material.icons.filled.Check
-import androidx.compose.material.icons.filled.Close
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
@@ -39,6 +37,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil3.compose.AsyncImage
+import com.google.firebase.auth.FirebaseAuth
 import fr.isen.segfault.thedisneyapp.R
 import fr.isen.segfault.thedisneyapp.dataClasses.Film
 import fr.isen.segfault.thedisneyapp.dataClasses.TmdbMovieSearchResponse
@@ -61,6 +60,9 @@ fun FilmDetailScreen(
     var ownDvdBluray by remember { mutableStateOf(false) }
     var wantToGetRid by remember { mutableStateOf(false) }
     var posterUrl by remember { mutableStateOf<String?>(null) }
+
+    val auth = FirebaseAuth.getInstance()
+    val user = auth.currentUser
 
     LaunchedEffect(filmId) {
         fetchFilmById(filmId) { loadedFilm ->
@@ -173,64 +175,69 @@ fun FilmDetailScreen(
                             fontWeight = FontWeight.Bold,
                             maxLines = 3
                         )
-                        DetailInfoLine(label = "Year", value = currentFilm?.releaseYear?.toString() ?: "-")
+                        DetailInfoLine(
+                            label = "Year",
+                            value = currentFilm?.releaseYear?.toString() ?: "-"
+                        )
                         DetailInfoLine(label = "Genre", value = currentFilm?.genre ?: "-")
                     }
                 }
 
-                Column(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(top = 28.dp),
-                    verticalArrangement = Arrangement.spacedBy(12.dp)
-                ) {
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(12.dp),
-                        verticalAlignment = Alignment.CenterVertically
+                if(user != null) {
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(top = 28.dp),
+                        verticalArrangement = Arrangement.spacedBy(12.dp)
                     ) {
-                        StatusButtonWithText(
-                            text = "Watched",
-                            color = colorResource(R.color.status_green),
-                            isActive = watched,
-                            onClick = { watched = !watched; persistStatus() },
-                            modifier = Modifier.weight(1f)
-                        )
-                        StatusButtonWithText(
-                            text = "Want to watch",
-                            color = colorResource(R.color.status_blue),
-                            isActive = wantToWatch,
-                            onClick = { wantToWatch = !wantToWatch; persistStatus() },
-                            modifier = Modifier.weight(1f)
-                        )
-                    }
-
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(12.dp),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        StatusButtonWithText(
-                            text = "Own DVD",
-                            color = colorResource(R.color.status_red),
-                            isActive = ownDvdBluray,
-                            onClick = {
-                                ownDvdBluray = !ownDvdBluray
-                                if (!ownDvdBluray) wantToGetRid = false
-                                persistStatus()
-                            },
-                            modifier = Modifier.weight(1f)
-                        )
-                        if (ownDvdBluray) {
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.spacedBy(12.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
                             StatusButtonWithText(
-                                text = "Get rid",
-                                color = colorResource(R.color.status_yellow),
-                                isActive = wantToGetRid,
-                                onClick = { wantToGetRid = !wantToGetRid; persistStatus() },
+                                text = "Watched",
+                                color = colorResource(R.color.status_green),
+                                isActive = watched,
+                                onClick = { watched = !watched; persistStatus() },
                                 modifier = Modifier.weight(1f)
                             )
-                        } else {
-                            Box(modifier = Modifier.weight(1f))
+                            StatusButtonWithText(
+                                text = "Want to watch",
+                                color = colorResource(R.color.status_blue),
+                                isActive = wantToWatch,
+                                onClick = { wantToWatch = !wantToWatch; persistStatus() },
+                                modifier = Modifier.weight(1f)
+                            )
+                        }
+
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.spacedBy(12.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            StatusButtonWithText(
+                                text = "Own DVD",
+                                color = colorResource(R.color.status_red),
+                                isActive = ownDvdBluray,
+                                onClick = {
+                                    ownDvdBluray = !ownDvdBluray
+                                    if (!ownDvdBluray) wantToGetRid = false
+                                    persistStatus()
+                                },
+                                modifier = Modifier.weight(1f)
+                            )
+                            if (ownDvdBluray) {
+                                StatusButtonWithText(
+                                    text = "Get rid",
+                                    color = colorResource(R.color.status_yellow),
+                                    isActive = wantToGetRid,
+                                    onClick = { wantToGetRid = !wantToGetRid; persistStatus() },
+                                    modifier = Modifier.weight(1f)
+                                )
+                            } else {
+                                Box(modifier = Modifier.weight(1f))
+                            }
                         }
                     }
                 }
