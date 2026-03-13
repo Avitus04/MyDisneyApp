@@ -18,6 +18,8 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Check
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
@@ -47,6 +49,7 @@ import fr.isen.segfault.thedisneyapp.dataClasses.fetchUsersWhoOwnAndWantToGetRid
 import fr.isen.segfault.thedisneyapp.dataClasses.getPosterUrl
 import fr.isen.segfault.thedisneyapp.dataClasses.saveFilmStatus
 import fr.isen.segfault.thedisneyapp.network.TmdbApiClient
+import fr.isen.segfault.thedisneyapp.utils.sendContactMessage
 
 @Composable
 fun FilmDetailScreen(
@@ -286,7 +289,8 @@ fun FilmDetailScreen(
                             verticalArrangement = Arrangement.spacedBy(10.dp)
                         ) {
                             availableUsers.forEach { user ->
-                                UserOwnerCard(user = user)
+                                UserOwnerCard(user = user, filmId = film?.id ?: "", filmTitle = film?.title
+                                    ?: "")
                             }
                         }
                     }
@@ -385,7 +389,16 @@ fun StatusButtonWithText(
 }
 
 @Composable
-fun UserOwnerCard(user: UserOwnerUi) {
+fun UserOwnerCard(
+    user: UserOwnerUi,
+    filmTitle: String,
+    filmId: String
+) {
+    val auth = FirebaseAuth.getInstance()
+    var sent by remember { mutableStateOf(false) }
+    var sending by remember { mutableStateOf(false) }
+    val isOwnCard = auth.currentUser?.uid == user.uid
+
     Card(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(14.dp),
@@ -401,12 +414,49 @@ fun UserOwnerCard(user: UserOwnerUi) {
                 fontWeight = FontWeight.SemiBold
             )
             Text(
-                text = "Owns it & Wants to get rid of it",
+                text = "Owns it • Wants to get rid of it",
                 color = colorResource(R.color.text).copy(alpha = 0.72f),
                 fontSize = 13.sp,
                 fontWeight = FontWeight.Medium,
                 modifier = Modifier.padding(top = 4.dp)
             )
+
+            // contact button, only if not own card
+            if (!isOwnCard) {
+                Button(
+                    onClick = {
+                        sending = true
+                        sendContactMessage(
+                            receiverUid = user.uid,
+                            filmTitle = filmTitle,
+                            filmId = filmId,
+                            onSuccess = { sent = true; sending = false },
+                            onFailure = { sending = false }
+                        )
+                    },
+                    enabled = !sent && !sending,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(top = 10.dp)
+                        .height(36.dp),
+                    shape = RoundedCornerShape(10.dp),
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = if (sent) colorResource(R.color.accent_dim)
+                        else colorResource(R.color.accent2)
+                    )
+                ) {
+                    Text(
+                        text = when {
+                            sending -> "Sending..."
+                            sent    -> "Message sent"
+                            else    -> "Contact"
+                        },
+                        fontSize = 12.sp,
+                        fontWeight = FontWeight.SemiBold,
+                        color = colorResource(R.color.text)
+                    )
+                }
+            }
         }
     }
 }

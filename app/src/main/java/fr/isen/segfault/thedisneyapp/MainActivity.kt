@@ -34,15 +34,18 @@ import fr.isen.segfault.thedisneyapp.screens.BottomAppBar
 import fr.isen.segfault.thedisneyapp.screens.FilmDetailScreen
 import fr.isen.segfault.thedisneyapp.screens.FilmsScreen
 import fr.isen.segfault.thedisneyapp.screens.FranchisesScreen
+import fr.isen.segfault.thedisneyapp.screens.MessagesScreen
 import fr.isen.segfault.thedisneyapp.screens.ProfileScreen
 import fr.isen.segfault.thedisneyapp.screens.TabBarItem
 import fr.isen.segfault.thedisneyapp.screens.UniversesScreen
 import fr.isen.segfault.thedisneyapp.ui.theme.MyDisneyAppTheme
+import fr.isen.segfault.thedisneyapp.utils.initRemoteConfig
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
+        initRemoteConfig()
         setContent {
             MyDisneyAppTheme {
                 val navController = rememberNavController()
@@ -167,9 +170,15 @@ class MainActivity : ComponentActivity() {
                                     },
                                     onFilmClick = { filmId ->
                                         navController.navigate("filmDetail/$filmId")
-                                    }
+                                    },
+                                    onNavigateToMessages = { navController.navigate("Messages") }
                                 )
                             }
+                        }
+                        composable("Messages") {
+                            MessagesScreen(
+                                onFilmClick = { filmId -> navController.navigate("filmDetail/$filmId") }
+                            )
                         }
                     }
                 }

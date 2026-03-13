@@ -37,6 +37,7 @@ import fr.isen.segfault.thedisneyapp.dataClasses.updateWantToGetRid
 fun ProfileScreen(
     onLogout: () -> Unit,
     onFilmClick: (String) -> Unit,
+    onNavigateToMessages: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     val auth = FirebaseAuth.getInstance()
@@ -396,6 +397,27 @@ fun ProfileScreen(
                         }
                     }
                 }
+            }
+
+           // messages button
+            Button(
+                onClick = { onNavigateToMessages()},
+                modifier = Modifier
+                    .padding(top = 20.dp)
+                    .fillMaxWidth()
+                    .height(52.dp)
+                    .border(1.dp, colorResource(R.color.accent).copy(alpha = 0.6f), RoundedCornerShape(12.dp)),
+                shape = RoundedCornerShape(12.dp),
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = colorResource(R.color.accent_dim)
+                )
+            ) {
+                Text(
+                    "Messages",
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 15.sp,
+                    color = colorResource(R.color.accent)
+                )
             }
 
             // logout button
